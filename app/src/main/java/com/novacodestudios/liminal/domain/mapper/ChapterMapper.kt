@@ -1,7 +1,9 @@
 package com.novacodestudios.liminal.domain.mapper
 
+import com.novacodestudios.liminal.data.locale.entity.ChapterEntity
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.domain.model.Chapter
+import com.novacodestudios.liminal.util.hashToMD5
 
 
 fun ChapterDto.toChapter() = Chapter(
@@ -15,3 +17,17 @@ fun Chapter.toChapterDto() = ChapterDto(
     releaseDate = releaseDate,
     url = url
 )
+
+fun Chapter.toChapterEntity(seriesId: String,index:Int) = ChapterEntity(
+    id = url.hashToMD5(),
+    title = title,
+    isRead = false,
+    //releaseDate = releaseDate,
+    url = url,
+    index = index,
+    seriesId = seriesId
+)
+
+fun List<Chapter>.toChapterEntityList(seriesId: String) = mapIndexed { index, chapter ->
+    chapter.toChapterEntity(seriesId,index)
+}

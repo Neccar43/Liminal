@@ -26,12 +26,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -47,20 +51,35 @@ import com.bumptech.glide.integration.compose.placeholder
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.MangaDetail
 import com.novacodestudios.liminal.domain.model.SeriesType
+import com.novacodestudios.liminal.prensentation.library.LibraryViewModel
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun DetailScreen(
     viewModel: DetailViewModel = hiltViewModel(),
     onNavigateUp: () -> Unit,
-    onNavigateMangaReadingScreen: (Chapter,List<Chapter>) -> Unit,
-    onNavigateNovelReadingScreen: (Chapter,List<Chapter>) -> Unit
+    onNavigateMangaReadingScreen: (Chapter, List<Chapter>) -> Unit,
+    onNavigateNovelReadingScreen: (Chapter, String) -> Unit
 ) {
+    val snackbarHostState =
+        remember { SnackbarHostState() }
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is DetailViewModel.UIState.ShowSnackBar -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     DetailContent(
         state = viewModel.state,
+        snackbarHostState = snackbarHostState,
         onNavigateUp = onNavigateUp,
         onNavigateMangaReadingScreen = onNavigateMangaReadingScreen,
-        onNavigateNovelReadingScreen = onNavigateNovelReadingScreen
+        onNavigateNovelReadingScreen = onNavigateNovelReadingScreen,
+        onEvent = viewModel::onEvent,
     )
 }
 
@@ -68,14 +87,19 @@ fun DetailScreen(
 @Composable
 fun DetailContent(
     state: DetailState,
+    snackbarHostState: SnackbarHostState,
+    onEvent: (DetailEvent) -> Unit,
     onNavigateUp: () -> Unit,
-    onNavigateMangaReadingScreen: (Chapter,List<Chapter>) -> Unit,
-    onNavigateNovelReadingScreen: (Chapter,List<Chapter>) -> Unit,
+    onNavigateMangaReadingScreen: (Chapter, List<Chapter>) -> Unit,
+    onNavigateNovelReadingScreen: (Chapter, String) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    Scaffold(topBar = {
-        DetailTopBar(scrollBehavior = scrollBehavior, onNavigateUp = onNavigateUp)
-    }, modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)) { paddingValues ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            DetailTopBar(scrollBehavior = scrollBehavior, onNavigateUp = onNavigateUp)
+        }, modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -134,15 +158,22 @@ fun DetailContent(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            val firstChapter= if(state.detail?.chapters?.isEmpty() == true) null else state.detail?.chapters?.first()
+            val firstChapter =
+                if (state.detail?.chapters?.isEmpty() == true) null else state.detail?.chapters?.last()
 
             Button(modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp), onClick = {
-
                 when (state.detail!!.type) {
-                    SeriesType.MANGA -> onNavigateMangaReadingScreen(firstChapter!!,state.detail.chapters)
-                    SeriesType.NOVEL -> onNavigateNovelReadingScreen(firstChapter!!,state.detail.chapters)
+                    SeriesType.MANGA -> onNavigateMangaReadingScreen(
+                        firstChapter!!,
+                        state.detail.chapters
+                    )
+
+                    SeriesType.NOVEL -> onNavigateNovelReadingScreen(
+                        firstChapter!!,
+                        state.detailPageUrl
+                    )
                 }
             }) {
                 Text(text = "Okumaya ${firstChapter?.title}'den Başla")
@@ -158,10 +189,18 @@ fun DetailContent(
 
             (state.detail?.chapters ?: emptyList()).forEach { chapter ->
                 ChapterItem(
-                    chapter = chapter, onChapterClick ={
+                    chapter = chapter, onChapterClick = {
+                        onEvent(DetailEvent.OnSeriesChapterClick)
                         when (state.detail!!.type) {
-                            SeriesType.MANGA -> onNavigateMangaReadingScreen(chapter,state.detail.chapters)
-                            SeriesType.NOVEL -> onNavigateNovelReadingScreen(chapter,state.detail.chapters)
+                            SeriesType.MANGA -> onNavigateMangaReadingScreen(
+                                chapter,
+                                state.detail.chapters
+                            )
+
+                            SeriesType.NOVEL -> onNavigateNovelReadingScreen(
+                                chapter,
+                                state.detailPageUrl
+                            )
                         }
                     }
 
@@ -282,12 +321,14 @@ private fun DetailPreview() {
                 detailPageUrl = ""
             ),
             onNavigateUp = { },
-            onNavigateMangaReadingScreen = {_,_->
+            onNavigateMangaReadingScreen = { _, _ ->
 
             },
-            onNavigateNovelReadingScreen = {_,_->
+            onNavigateNovelReadingScreen = { _, _ ->
 
-            }
+            },
+            onEvent = {},
+            snackbarHostState = SnackbarHostState()
         )
     }
 

@@ -8,9 +8,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.novacodestudios.liminal.MangaReadingScreen
 import com.novacodestudios.liminal.data.repository.MangaRepository
 import com.novacodestudios.liminal.domain.model.Chapter
+import com.novacodestudios.liminal.prensentation.screen.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter
@@ -28,8 +28,8 @@ class MangaReaderViewModel @Inject constructor(
 ) : ViewModel() {
     var state by mutableStateOf(
         MangaState(
-            currentChapter = savedStateHandle.toRoute<MangaReadingScreen>().currentChapter,
-            chapters = savedStateHandle.toRoute<MangaReadingScreen>().chapters.reversed()
+            currentChapter = savedStateHandle.toRoute<Screen.MangaReading>().currentChapter,
+            chapters = savedStateHandle.toRoute<Screen.MangaReading>().chapters.reversed()
         )
     )
         private set

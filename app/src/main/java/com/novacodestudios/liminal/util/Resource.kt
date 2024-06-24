@@ -1,6 +1,9 @@
 package com.novacodestudios.liminal.util
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 
 sealed class Resource<out T> {
@@ -23,13 +26,27 @@ inline fun <T> runSafely(block: () -> T): Resource<T> {
     }
 }
 
-fun <T> executeWithResource(block: suspend () -> T): Flow<Resource<T>> {
+fun <T> executeWithResource(failLog:(Exception)->Unit={},block: suspend () -> T): Flow<Resource<T>> {
     return flow {
         emit(Resource.loading())
         try {
             emit(Resource.success(block()))
         } catch (e: Exception) {
+            failLog(e)
             emit(Resource.error(e))
         }
+    }
+}
+
+
+fun <T> executeWithResourceFlow(block: suspend () -> Flow<T>): Flow<Resource<T>> = channelFlow {
+    send(Resource.Loading)
+    try {
+        block()
+            .collectLatest {
+                send(Resource.Success(it))
+            }
+    } catch (e: Exception) {
+        send(Resource.Error(e))
     }
 }

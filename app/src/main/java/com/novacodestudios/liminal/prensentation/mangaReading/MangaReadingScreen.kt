@@ -79,10 +79,13 @@ fun MangaReadingContent(
     }
     Scaffold(topBar = {
         AnimatedVisibility(visible = isBarVisible) {
-            MangaReadingTopBar(
-                chapterName = state.currentChapter.title,
-                onNavigateUp = onNavigateUp
-            )
+            Box {
+                MangaReadingTopBar(
+                    chapterName = state.currentChapter.title,
+                    onNavigateUp = onNavigateUp
+                )
+            }
+
         }
     }) { paddingValues ->
         Column(
@@ -102,7 +105,9 @@ fun MangaReadingContent(
                         modifier = Modifier.fillMaxSize(),
                         urls = state.imageUrls.reversed(),
                         onLoadNextChapter = {},
-                        onLoadPreviousChapter = {}
+                        onLoadPreviousChapter = {},
+                        isBarVisible = isBarVisible,
+                        onImageClick = { isBarVisible = !isBarVisible }
                     )
                 }
 
@@ -122,6 +127,8 @@ fun MangaReadingContent(
                             Log.d(TAG, "onLoadPreviousChapter: Çalıştı")
                             onEvent(MangaEvent.OnPreviousChapter)
                         },
+                        isBarVisible = isBarVisible,
+                        onImageClick = { isBarVisible = !isBarVisible }
                     )
                 }
             }
@@ -149,7 +156,9 @@ fun MangaReader(
     modifier: Modifier = Modifier,
     urls: List<String>,
     onLoadNextChapter: () -> Unit,
-    onLoadPreviousChapter: () -> Unit
+    onLoadPreviousChapter: () -> Unit,
+    isBarVisible: Boolean,
+    onImageClick: () -> Unit,
 ) {
     val newUrls = remember { mutableStateListOf<String>() }
     var isNextChapter by remember {
@@ -176,19 +185,19 @@ fun MangaReader(
 
     LaunchedEffect(isNextChapter) {
         Log.d(TAG, "MangaReader: isNext chapter çalıştı $isNextChapter")
-        if (isNextChapter){
+        if (isNextChapter) {
             Log.d(TAG, "MangaReader: sıradaki bölümün ilk sayfasına geçilecek")
             pagerState.scrollToPage(1)
-            isNextChapter=false
+            isNextChapter = false
         }
     }
     LaunchedEffect(isPreviousChapter) {
         Log.d(TAG, "MangaReader: isPrevious chapter çalıştı $isPreviousChapter")
-        if (isPreviousChapter){
+        if (isPreviousChapter) {
             Log.d(TAG, "MangaReader: önceki bölün bölümün son sayfasına geçilecek")
-            pagerState.scrollToPage(newUrls.size-2)
+            pagerState.scrollToPage(newUrls.size - 2)
             pagerState.currentPage
-            isPreviousChapter=false
+            isPreviousChapter = false
         }
     }
     Box(modifier = modifier) {
@@ -196,34 +205,37 @@ fun MangaReader(
             GlideImage(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clickable { onImageClick() }
                     .zoomable(zoomState = zoomState),
                 model = newUrls[page],
                 contentDescription = null,
                 contentScale = ContentScale.FillWidth
             )
         }
-        PageIndicator(
-            modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 8.dp)
-                .padding(8.dp),
-            pagerState = pagerState
-        )
+        AnimatedVisibility(visible = isBarVisible,modifier = Modifier.align(Alignment.BottomCenter)) {
+            PageIndicator(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .padding(8.dp),
+                pagerState = pagerState
+            )
+
+        }
 
         LaunchedEffect(pagerState) {
             snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
                 .collect { (page, isScrollInProgress) ->
-                   // Log.d(TAG, "MangaReader: pager state değişti")
+                    // Log.d(TAG, "MangaReader: pager state değişti")
                     if (page == newUrls.size - 1 && isScrollInProgress) {
                         onLoadNextChapter()
-                        isNextChapter=true
+                        isNextChapter = true
                     }
-                     if (page==0 && isScrollInProgress){
-                         onLoadPreviousChapter()
-                         isPreviousChapter=true
-                     }
+                    if (page == 0 && isScrollInProgress) {
+                        onLoadPreviousChapter()
+                        isPreviousChapter = true
+                    }
                 }
         }
     }
@@ -284,6 +296,9 @@ fun MangaReadingTopBar(chapterName: String, onNavigateUp: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 private fun Readerprew() {
+    var isVisible by remember {
+        mutableStateOf(true)
+    }
     LiminalTheme {
         MangaReader(urls = listOf(
             "https://sadscans.com/assets/series/60956a558cfbd/6096f0e57f331/images/001.jpg",
@@ -294,6 +309,12 @@ private fun Readerprew() {
             "https://sadscans.com/assets/series/60956a558cfbd/6096f0e57f331/images/006.jpg",
         ), onLoadNextChapter = { }, onLoadPreviousChapter = {
 
-        })
+        },
+            isBarVisible = isVisible,
+            onImageClick = {isVisible=!isVisible}
+
+
+        )
+
     }
 }

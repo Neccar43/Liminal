@@ -1,6 +1,5 @@
 package com.novacodestudios.liminal.prensentation.novelReading
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,10 +7,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import com.novacodestudios.liminal.NovelReadingScreen
 import com.novacodestudios.liminal.data.repository.NovelRepository
 import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.prensentation.mangaReading.MangaEvent
+import com.novacodestudios.liminal.prensentation.screen.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter
@@ -28,14 +26,21 @@ class NovelReadingViewModel @Inject constructor(
     ViewModel() {
     var state by mutableStateOf(
         NovelReadingState(
-            currentChapter = savedStateHandle.toRoute<NovelReadingScreen>().currentChapter,
-            chapters = savedStateHandle.toRoute<NovelReadingScreen>().chapters
-        )
+            currentChapter = savedStateHandle.toRoute<Screen.NovelReading>().currentChapter,
+            detailPageUrl = savedStateHandle.toRoute<Screen.NovelReading>().detailPageUrl
+            )
     )
         private set
 
     init {
+        getChapterList()
         getChapterContent(state.currentChapter.url)
+    }
+
+    private fun getChapterList() {
+        viewModelScope.launch {
+            repository.getNovelDetail(state.detailPageUrl)
+        }
     }
 
     fun onEvent(event: NovelEvent){
@@ -83,8 +88,9 @@ class NovelReadingViewModel @Inject constructor(
 
 
 data class NovelReadingState(
-    val chapters: List<Chapter>,
+    val chapters: List<Chapter> = emptyList(),
     val currentChapter: Chapter,
+    val detailPageUrl:String,
     val chapterContent: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val error: String = ""
