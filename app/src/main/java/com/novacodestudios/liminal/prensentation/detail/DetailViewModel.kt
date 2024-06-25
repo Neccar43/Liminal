@@ -13,15 +13,14 @@ import com.novacodestudios.liminal.data.repository.MangaRepository
 import com.novacodestudios.liminal.data.repository.NovelRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
 import com.novacodestudios.liminal.domain.mapper.toChapterEntityList
+import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.SeriesDetail
-import com.novacodestudios.liminal.domain.model.SeriesPreview
 import com.novacodestudios.liminal.domain.model.SeriesType
 import com.novacodestudios.liminal.domain.model.toSeriesEntity
 import com.novacodestudios.liminal.prensentation.screen.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.hashToMD5
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -50,105 +49,186 @@ class DetailViewModel @Inject constructor(
 
     init {
         getDetail()
+        getChapterList()
     }
 
     fun onEvent(event: DetailEvent) {
         when (event) {
-            DetailEvent.OnSeriesChapterClick -> {
+            is DetailEvent.OnSeriesChapterClick -> {
                 viewModelScope.launch {
                     launch {
-                        val seriesEntity =state.detail!!.toSeriesEntity(state.detailPageUrl)
-                        seriesRepository.insertSeries(seriesEntity).handleResource {
+                        state =
+                            state.copy(detail = state.detail?.copy2(chapters = state.chapterList))
+
+                        val seriesEntity = state.detail!!.toSeriesEntity(state.detailPageUrl)
+                            .copy(currentChapterId = event.chapter.url.hashToMD5())
+
+                        seriesRepository.upsert(seriesEntity).handleResource {
                             _eventFlow.emit(UIState.ShowSnackBar("kaydetme başarılı"))
                         }
                     }
                     launch {
-                        val chapterEntityList=state.detail!!.chapters.toChapterEntityList(seriesId = state.detailPageUrl.hashToMD5())
+                        val chapterEntityList =
+                            state.chapterList.toChapterEntityList(seriesId = state.detailPageUrl.hashToMD5())
                         chapterRepository.insertAllChapters(chapterEntityList).handleResource {
-
+                            Log.d(TAG, "onEvent: chapterlar başarılı şekilde eklendi size ${chapterEntityList.size}")
                         }
+
                     }
 
                 }
 
             }
+
+            DetailEvent.OnChapterListLoadRetry -> getChapterList()
         }
     }
 
-        private fun getDetail() {
-            when (state.type) {
-                SeriesType.MANGA -> getMangaDetail()
-                SeriesType.NOVEL -> getNovelDetail()
-            }
+    private fun getDetail() {
+        when (state.type) {
+            SeriesType.MANGA -> getMangaDetail()
+            SeriesType.NOVEL -> getNovelDetail()
         }
+    }
 
-        private fun getMangaDetail() {
-            viewModelScope.launch {
-                _eventFlow.emit(UIState.ShowSnackBar("kaydetme başarılı"))
-                Log.d(TAG, "getMangaDetail: manga detail çalıştı")
-                mangaRepo.getMangaDetail(state.detailPageUrl).handleResource {
-                    state = state.copy(detail = it)
+    private fun getChapterList() {
+        when (state.type) {
+            SeriesType.MANGA -> getMangaChapterList()
+            SeriesType.NOVEL -> getNovelChapterList()
+        }
+    }
+
+    private fun getMangaChapterList() {
+        viewModelScope.launch {
+            mangaRepo.getMangaChapterList(state.detailPageUrl).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Error -> {
+                        Log.e(TAG, "getMangaChapterList: hata:${resource.exception}")
+                        state = state.copy(
+                            isChapterListLoading = false,
+                            chapterListError = resource.exception.localizedMessage
+                                ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
+                        )
+                        _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
+                    }
+
+                    Resource.Loading -> {
+                        state = state.copy(isChapterListLoading = true, chapterListError = null)
+                    }
+
+                    is Resource.Success -> {
+                        state = state.copy(
+                            chapterListError = null,
+                            isChapterListLoading = false,
+                            chapterList = resource.data
+                        )
+                    }
                 }
             }
         }
+    }
 
-        private fun getNovelDetail() {
-            viewModelScope.launch {
-                novelRepo.getNovelDetail(state.detailPageUrl).handleResource {
-                    state = state.copy(detail = it)
+    private fun getMangaDetail() {
+        viewModelScope.launch {
+            Log.d(TAG, "getMangaDetail: manga detail çalıştı")
+            mangaRepo.getMangaDetail(state.detailPageUrl).handleResource {
+                state = state.copy(detail = it)
+            }
+        }
+    }
+
+    private fun getNovelDetail() {
+        viewModelScope.launch {
+            novelRepo.getNovelDetail(state.detailPageUrl).handleResource {
+                state = state.copy(detail = it)
+            }
+        }
+    }
+
+    private fun getNovelChapterList() {
+        viewModelScope.launch {
+            novelRepo.getNovelChapters(state.detailPageUrl).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Error -> {
+                        Log.e(TAG, "getNovelChapters: hata:${resource.exception}")
+                        state = state.copy(
+                            isChapterListLoading = false,
+                            chapterListError = resource.exception.localizedMessage
+                                ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
+                        )
+                        _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
+                    }
+
+                    Resource.Loading -> {
+                        state = state.copy(isChapterListLoading = true, chapterListError = null)
+                    }
+
+                    is Resource.Success -> {
+                        state = state.copy(
+                            chapterListError = null,
+                            isChapterListLoading = false,
+                            chapterList = resource.data
+                        )
+                    }
                 }
             }
         }
+    }
 
-        companion object {
-            private const val TAG = "DetailViewModel"
-        }
-        sealed class UIState {
-            data class ShowSnackBar(val message: String) : UIState()
-        }
+    companion object {
+        private const val TAG = "DetailViewModel"
+    }
 
-        private fun <T> Flow<Resource<T>>.handleResource(
-            onSuccess: suspend (T) -> Unit
-        ) {
-            viewModelScope.launch {
-                this@handleResource.collectLatest { resource ->
-                    when (resource) {
-                        is Resource.Error -> {
-                            Log.e(TAG, "handleResource: error ${resource.exception}")
-                            state = state.copy(isLoading = false)
-                            _eventFlow.emit(
-                                UIState.ShowSnackBar(
-                                    resource.exception.localizedMessage ?: "An error occurred"
-                                )
+    sealed class UIState {
+        data class ShowSnackBar(val message: String) : UIState()
+    }
+
+    private fun <T> Flow<Resource<T>>.handleResource(
+        onSuccess: suspend (T) -> Unit
+    ) {
+        viewModelScope.launch {
+            this@handleResource.collectLatest { resource ->
+                when (resource) {
+                    is Resource.Error -> {
+                        Log.e(TAG, "handleResource: error ${resource.exception}")
+                        state = state.copy(isLoading = false)
+                        _eventFlow.emit(
+                            UIState.ShowSnackBar(
+                                resource.exception.localizedMessage ?: "An error occurred"
                             )
-                        }
+                        )
+                    }
 
-                        Resource.Loading -> {
-                            Log.d(TAG, "handleResource: loading")
-                            state = state.copy(isLoading = true)
-                        }
+                    Resource.Loading -> {
+                        Log.d(TAG, "handleResource: loading")
+                        state = state.copy(isLoading = true)
+                    }
 
-                        is Resource.Success -> {
-                            state = state.copy(isLoading = false)
-                            Log.d(TAG, "handleResource: success")
-                            onSuccess(resource.data)
-                        }
+                    is Resource.Success -> {
+                        state = state.copy(isLoading = false)
+                        Log.d(TAG, "handleResource: success")
+                        onSuccess(resource.data)
                     }
                 }
             }
         }
-
-
     }
 
-    data class DetailState(
-        val isLoading: Boolean = true,
-        val detailPageUrl: String,
-        val type: SeriesType,
-        val detail: SeriesDetail? = null,
-    )
 
-    sealed class DetailEvent {
-        data object OnSeriesChapterClick : DetailEvent()
-    }
+}
+
+data class DetailState(
+    val isLoading: Boolean = true,
+    val detailPageUrl: String,
+    val type: SeriesType,
+    val detail: SeriesDetail? = null,
+    val chapterList: List<Chapter> = emptyList(),
+    val isChapterListLoading: Boolean = false,
+    val chapterListError: String? = null,
+)
+
+sealed class DetailEvent {
+    data class OnSeriesChapterClick(val chapter: Chapter) : DetailEvent()
+    data object OnChapterListLoadRetry : DetailEvent()
+}
 

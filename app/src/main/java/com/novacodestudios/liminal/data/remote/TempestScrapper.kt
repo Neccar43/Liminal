@@ -56,6 +56,36 @@ class TempestScrapper(private val context: Context) : MangaScraper {
         }
     }
 
+    override suspend fun getMangaChapterList(detailPageUrl: String): List<ChapterDto> {
+        return skrape(HttpFetcher) {
+            request {
+                url = detailPageUrl
+            }
+            response {
+                 document.div {
+                    withClass = "eplister"
+                    withId = "chapterlist"
+
+                    ul {
+                        li {
+                            findAll {
+                                map {
+                                    ChapterDto(
+                                        title = it.a { findFirst { text } },
+                                        url = it.a { findFirst { attribute("href") } },
+                                        releaseDate = "-"
+                                    )
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
     // TODO: Birkerede birden fazla istek atıyor
     override suspend fun getMangaDetail(detailPageUrl: String): MangaDetailDto {
         return skrape(HttpFetcher) {
@@ -63,6 +93,11 @@ class TempestScrapper(private val context: Context) : MangaScraper {
                 url = detailPageUrl
             }
             response {
+                /*val type=document.div {
+                    withClass = "imptdt"
+                    a{findFirst{text}}
+                }
+                val isVerticalRead=type!="Manga"*/
                 MangaDetailDto(
                     name = document.h1 {
                         withClass = "entry-title"
@@ -81,27 +116,8 @@ class TempestScrapper(private val context: Context) : MangaScraper {
                         withClass = "imptdt"
                         i { findByIndex(2) { text } }
                     },
-                    chapters = document.div {
-                        withClass = "eplister"
-                        withId = "chapterlist"
-
-                        ul {
-                            li {
-                                findAll {
-                                    map {
-                                        Log.d(TAG, "getMangaDetail: $it")
-                                        ChapterDto(
-                                            title = it.a { findFirst { text } },
-                                            url = it.a { findFirst { attribute("href") } },
-                                            releaseDate = "-"
-                                        )
-                                    }
-
-                                }
-                            }
-                        }
-
-                    }
+                    chapters = emptyList(),
+                    //isVerticalRead = isVerticalRead
                 )
             }
         }

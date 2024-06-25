@@ -12,7 +12,25 @@ open class SeriesDetail (
     open val summary: String,
     open val chapters: List<Chapter>,
     open val type:SeriesType,
-)
+){
+    fun copy2(
+        name: String = this.name,
+        imageUrl: String = this.imageUrl,
+        author: String = this.author,
+        summary: String = this.summary,
+        chapters: List<Chapter> = this.chapters,
+        type: SeriesType = this.type
+    ): SeriesDetail {
+        return SeriesDetail(
+            name = name,
+            imageUrl = imageUrl,
+            author = author,
+            summary = summary,
+            chapters = chapters,
+            type = type
+        )
+    }
+}
 
 fun SeriesDetail.toSeriesEntity(detailPageUrl:String): SeriesEntity {
     return SeriesEntity(

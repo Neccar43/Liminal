@@ -8,12 +8,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.novacodestudios.liminal.data.repository.ChapterRepository
 import com.novacodestudios.liminal.data.repository.MangaRepository
+import com.novacodestudios.liminal.domain.mapper.toChapterEntity
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.prensentation.screen.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter
+import com.novacodestudios.liminal.util.hashToMD5
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,7 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MangaReaderViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: MangaRepository
+    private val repository: MangaRepository,
+    private val chapterRepository: ChapterRepository,
 ) : ViewModel() {
     var state by mutableStateOf(
         MangaState(
@@ -75,16 +79,27 @@ class MangaReaderViewModel @Inject constructor(
                 state = state.copy(readingMode = event.readingMode)
             }
 
-            MangaEvent.OnNextChapter -> getNextChapter()
-            MangaEvent.OnPreviousChapter -> getPreviousChapter()
+            MangaEvent.OnNextChapter -> {
+                getNextChapter()
+            }
+            MangaEvent.OnPreviousChapter -> {
+                getPreviousChapter()
+            }
         }
     }
 
     private fun getNextChapter() {
+        setChapterIsReadTrue(state.currentChapter)
         val nextChapter = state.chapters.getNextChapter(state.currentChapter) ?: return
         state = state.copy(currentChapter = nextChapter)
         getMangaImages(state.currentChapter.url)
 
+    }
+
+    private fun setChapterIsReadTrue(chapter: Chapter){
+        viewModelScope.launch {
+            chapterRepository.markChapterAsReadAndUpdateCurrentChapter(chapterId = chapter.url.hashToMD5())
+        }
     }
 
     private fun getPreviousChapter() {

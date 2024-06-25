@@ -25,6 +25,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -159,11 +160,16 @@ fun DetailContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             val firstChapter =
-                if (state.detail?.chapters?.isEmpty() == true) null else state.detail?.chapters?.last()
+                if (state.chapterList.isEmpty()) null else state.chapterList.last()
 
             Button(modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp), onClick = {
+                    if (state.chapterListError!=null){
+                        onEvent(DetailEvent.OnChapterListLoadRetry)
+                        return@Button
+                    }
+
                 when (state.detail!!.type) {
                     SeriesType.MANGA -> onNavigateMangaReadingScreen(
                         firstChapter!!,
@@ -176,36 +182,53 @@ fun DetailContent(
                     )
                 }
             }) {
+                if (state.isChapterListLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+                    return@Button
+                }
+                if (state.chapterListError!=null){
+                    Text(text = "Yeniden Deneyin")
+                    return@Button
+                }
                 Text(text = "Okumaya ${firstChapter?.title}'den Başla")
             }
             //Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Bölümler",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
 
 
-            (state.detail?.chapters ?: emptyList()).forEach { chapter ->
-                ChapterItem(
-                    chapter = chapter, onChapterClick = {
-                        onEvent(DetailEvent.OnSeriesChapterClick)
-                        when (state.detail!!.type) {
-                            SeriesType.MANGA -> onNavigateMangaReadingScreen(
-                                chapter,
-                                state.detail.chapters
-                            )
-
-                            SeriesType.NOVEL -> onNavigateNovelReadingScreen(
-                                chapter,
-                                state.detailPageUrl
-                            )
-                        }
-                    }
-
+            if (state.isChapterListLoading) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
                 )
+            } else {
+                Text(
+                    text = "Bölümler",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                state.chapterList.forEach { chapter ->
+                    ChapterItem(
+                        chapter = chapter, onChapterClick = {
+                            onEvent(DetailEvent.OnSeriesChapterClick(chapter))
+                            when (state.detail!!.type) {
+                                SeriesType.MANGA -> onNavigateMangaReadingScreen(
+                                    chapter,
+                                    state.detail.chapters
+                                )
+
+                                SeriesType.NOVEL -> onNavigateNovelReadingScreen(
+                                    chapter,
+                                    state.detailPageUrl
+                                )
+                            }
+                        }
+
+                    )
+                }
             }
+
         }
         LiminalProgressIndicator(Modifier.fillMaxSize(), isLoading = state.isLoading)
     }

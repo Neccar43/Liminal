@@ -103,9 +103,7 @@ class TurkceLightNovelScrapper(private val context: Context) {
                 )
             }
         }
-        val chapters=getNovelChapterUrls(detailPageUrl = detailPageUrl, context = context)
-
-        return detail.copy(chapters = chapters)
+        return detail
 
     }
 
@@ -130,8 +128,8 @@ class TurkceLightNovelScrapper(private val context: Context) {
         }
     }
 
-    private suspend fun getNovelChapterUrls(
-        context: Context,
+    suspend fun getNovelChapterUrls(
+        //context: Context,
         detailPageUrl: String
     ): List<ChapterDto> {
         return suspendCancellableCoroutine { continuation ->

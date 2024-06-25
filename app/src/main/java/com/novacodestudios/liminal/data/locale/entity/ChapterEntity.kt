@@ -17,6 +17,7 @@ data class ChapterEntity(
     val title: String,
     val isRead: Boolean,
     val url: String,
-    val index: Int,
-    val seriesId: String
+    val pageIndex: Int,
+    val seriesId: String,
+    val releaseDate:String,
 )

@@ -7,4 +7,5 @@ data class MangaDetailDto(
     val author: String,
     //val status: Status,
     val chapters: List<ChapterDto>,
+ //   val isVerticalRead:Boolean
 )

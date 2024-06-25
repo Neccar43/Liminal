@@ -6,9 +6,6 @@ import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
 import com.novacodestudios.liminal.util.executeWithResourceFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class SeriesRepository @Inject constructor(
@@ -22,12 +19,12 @@ class SeriesRepository @Inject constructor(
         seriesDao.getAllSeries()
     }
 
-    suspend fun upsertSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource{
+    suspend fun upsert(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource{
         seriesDao.upsert(series)
     }
 
     suspend fun insertSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource(){
-        seriesDao.insertSeries(series)
+        seriesDao.insert(series)
     }
 
     suspend fun deleteSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource{

@@ -25,11 +25,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +56,9 @@ import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import com.novacodestudios.liminal.util.capitalizeFirstLetter
 import androidx.compose.ui.tooling.preview.Preview as ComposPreview
 import com.novacodestudios.liminal.domain.model.SeriesPreview
+import com.novacodestudios.liminal.prensentation.detail.LiminalProgressIndicator
+import com.novacodestudios.liminal.prensentation.library.LibraryViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 
 @Composable
@@ -60,7 +66,19 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateDetailScreen: (SeriesPreview) -> Unit
 ) {
+    val snackbarHostState =
+        remember { SnackbarHostState() }
+
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is HomeViewModel.UIEvent.ShowToast -> snackbarHostState.showSnackbar(event.message)
+            }
+        }
+    }
+
     HomeContent(
+        snackBarHostState = snackbarHostState,
         state = viewModel.state,
         onEvent = viewModel::onEvent,
         onNavigateDetailScreen = onNavigateDetailScreen
@@ -71,11 +89,13 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     state: HomeState,
+    snackBarHostState: SnackbarHostState,
     onEvent: (HomeEvent) -> Unit,
     onNavigateDetailScreen: (SeriesPreview) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackBarHostState)},
         topBar = { HomeTopBar(scrollBehavior) },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { paddingValues ->
@@ -122,6 +142,8 @@ fun HomeContent(
             }
         }
     }
+
+    LiminalProgressIndicator(modifier = Modifier.fillMaxSize(),isLoading = state.isLoading)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -377,7 +399,9 @@ private fun Preview() {
                 ),
         ), onEvent = {}, onNavigateDetailScreen = {
 
-        })
+        },
+            snackBarHostState = SnackbarHostState()
+        )
 
     }
 }

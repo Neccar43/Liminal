@@ -86,7 +86,7 @@ dependencies {
     val lifeCycleVersion = "2.7.0"
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifeCycleVersion")
 
-    implementation("androidx.navigation:navigation-compose:2.8.0-alpha08")
+    implementation("androidx.navigation:navigation-compose:2.8.0-beta03")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     val coroutinesVersion = "1.7.3"
@@ -126,6 +126,10 @@ dependencies {
     implementation("net.engawapg.lib:zoomable:1.6.1")
 
     implementation("io.github.reactivecircus.cache4k:cache4k:0.13.0")
+
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+
 
 
 

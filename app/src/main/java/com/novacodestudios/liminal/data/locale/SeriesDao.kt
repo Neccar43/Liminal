@@ -16,7 +16,7 @@ interface SeriesDao {
     suspend fun upsert(series: SeriesEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertSeries(series: SeriesEntity)
+    suspend fun insert(series: SeriesEntity)
 
     @Delete
     suspend fun deleteSeries(series: SeriesEntity)

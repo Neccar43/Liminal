@@ -1,11 +1,11 @@
 package com.novacodestudios.liminal.data.repository
 
 import android.util.Log
-import com.novacodestudios.liminal.data.cache.novelDetailCache
-import com.novacodestudios.liminal.data.cache.novelPreviewCache
 import com.novacodestudios.liminal.data.remote.TurkceLightNovelScrapper
+import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.mapper.toNovelDetail
 import com.novacodestudios.liminal.domain.mapper.toNovelPreviewList
+import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.NovelDetail
 import com.novacodestudios.liminal.domain.model.NovelPreview
 import com.novacodestudios.liminal.util.Resource
@@ -18,41 +18,52 @@ class NovelRepository @Inject constructor(
 ) {
     fun getNovelList(): Flow<Resource<List<NovelPreview>>> =
         executeWithResource(
-            failLog = { Log.e(TAG, "getNovelList: error: $it")}
+            errorLog = { Log.e(TAG, "getNovelList: error: $it") }
         ) {
-        val cache = novelPreviewCache
-        val cachedPreviews = cache.get(Unit)
-        if (cachedPreviews.isNullOrEmpty()) {
-            cache.invalidateAll()
-            val scrapedPreviews = turkceLightNovelScrapper.getNovelList().toNovelPreviewList()
-            cache.put(Unit, scrapedPreviews)
-            scrapedPreviews
-        } else {
-            cachedPreviews
+            turkceLightNovelScrapper.getNovelList().toNovelPreviewList()
+
         }
-    }
 
     fun getNovelChapterContent(chapterUrl: String): Flow<Resource<List<String>>> =
         executeWithResource {
             turkceLightNovelScrapper.getNovelChapterContent(chapterUrl)
         }
 
-    fun getNovelDetail(detailPageUrl: String): Flow<Resource<NovelDetail>> = executeWithResource {
-        val cache = novelDetailCache
-        val cachedDetail = cache.get(detailPageUrl)
-        Log.d(TAG, "getNovelDetail: çalıştı")
-        if (cachedDetail == null) {
-            cache.invalidateAll()
+    /*fun getNovelDetail(detailPageUrl: String): Flow<Resource<NovelDetail>> =
+        executeWithResource(
+            errorLog = { Log.e(TAG, "getNovelDetail: $it") }
+        ) {
+            val cache = novelDetailCache
+            val cachedDetail = cache.get(detailPageUrl)
+            Log.d(TAG, "getNovelDetail: çalıştı")
+            if (cachedDetail == null || cachedDetail.chapters.isEmpty()) {
+                cache.invalidateAll()
+                val scrapedDetail =
+                    turkceLightNovelScrapper.getNovelDetail(detailPageUrl).toNovelDetail()
+                cache.put(detailPageUrl, scrapedDetail)
+                Log.d(TAG, "getNovelDetail: veri remote dan getirildi")
+                scrapedDetail
+            } else {
+                Log.d(TAG, "getNovelDetail: veri cache dan getirildi")
+                cachedDetail
+            }
+        }*/
+
+    fun getNovelDetail(detailPageUrl: String): Flow<Resource<NovelDetail>> =
+        executeWithResource(
+            errorLog = { Log.e(TAG, "getNovelDetail: $it") }
+        ) {
             val scrapedDetail =
                 turkceLightNovelScrapper.getNovelDetail(detailPageUrl).toNovelDetail()
-            cache.put(detailPageUrl, scrapedDetail)
-            Log.d(TAG, "getNovelDetail: veri remote dan getirildi")
             scrapedDetail
-        } else {
-            Log.d(TAG, "getNovelDetail: veri cache dan getirildi")
-            cachedDetail
         }
-    }
+
+    fun getNovelChapters(detailPageUrl: String): Flow<Resource<List<Chapter>>> =
+        executeWithResource {
+            turkceLightNovelScrapper
+                .getNovelChapterUrls(detailPageUrl = detailPageUrl)
+                .map { it.toChapter() }
+        }
 
     companion object {
         private const val TAG = "NovelRepository"

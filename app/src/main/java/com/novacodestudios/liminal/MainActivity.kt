@@ -19,16 +19,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import androidx.navigation.NavGraph
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -37,7 +39,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import com.novacodestudios.liminal.MainActivity.Companion.TAG
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.SeriesType
 import com.novacodestudios.liminal.prensentation.detail.DetailScreen
@@ -76,14 +77,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             LiminalTheme {
                 val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     Scaffold(
                         bottomBar = {
+                            val currentRoute = navBackStackEntry?.destination?.route
+                            val shouldDisplayBottomBar = when (currentRoute) {
+                                "com.novacodestudios.liminal.prensentation.screen.Screen.Home",
+                                "com.novacodestudios.liminal.prensentation.screen.Screen.Library" -> true
+                                else -> false
+                            }
+                            if (shouldDisplayBottomBar) {
                                 BottomBar(navController = navController, navItems = items)
-
+                            }
 
                         }
                     ) { paddingValues ->
@@ -94,6 +103,7 @@ class MainActivity : ComponentActivity() {
                             route = Graph.Root::class
                         ) {
                             mainGraph(navController)
+
                             composable<Screen.Detail>(
                                 typeMap = mapOf(typeOf<SeriesType>() to parcelableType<SeriesType>())
                             ) {
@@ -218,7 +228,24 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
         }
 
         composable<Screen.Library> {
-            LibraryScreen()
+            LibraryScreen(
+                onNavigateMangaReadingScreen = { chapter, chapters ->
+                    navController.navigate(
+                        Screen.MangaReading(
+                            currentChapter = chapter.withEncodedUrl(),
+                            chapters = chapters.map { it.withEncodedUrl() },
+                        )
+                    )
+                },
+                onNavigateNovelReadingScreen = { chapter, detailUrl ->
+                    navController.navigate(
+                        Screen.NovelReading(
+                            detailPageUrl = detailUrl.encodeUrl(),
+                            currentChapter = chapter.withEncodedUrl(),
+                        )
+                    )
+                }
+            )
         }
     }
 }

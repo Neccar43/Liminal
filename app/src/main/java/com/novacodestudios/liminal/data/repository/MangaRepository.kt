@@ -1,20 +1,19 @@
 package com.novacodestudios.liminal.data.repository
 
 import android.util.Log
-import com.novacodestudios.liminal.data.cache.mangaDetailCache
-import com.novacodestudios.liminal.data.cache.mangaPreviewCache
-import com.novacodestudios.liminal.data.cache.novelDetailCache
-import com.novacodestudios.liminal.data.cache.novelPreviewCache
 import com.novacodestudios.liminal.data.remote.MangaScraper
 import com.novacodestudios.liminal.data.remote.SadScansScrapper
 import com.novacodestudios.liminal.data.remote.TempestScrapper
+import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.mapper.toMangaDetail
 import com.novacodestudios.liminal.domain.mapper.toMangaPreviewList
-import com.novacodestudios.liminal.domain.mapper.toNovelPreviewList
+import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.MangaDetail
 import com.novacodestudios.liminal.domain.model.MangaPreview
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -25,21 +24,21 @@ class MangaRepository @Inject constructor(
 
 
     fun getMangas(pageNumber: Int = 1): Flow<Resource<List<MangaPreview>>> =
-        executeWithResource {
-            val cache= mangaPreviewCache
-            val cachedPreviews=cache.get(Unit)
-            if (cachedPreviews.isNullOrEmpty()){
-                cache.invalidateAll()
-                val sadScansMangas = sadScansScrapper.getMangaList()
-                val tempestMangas = tempestScrapper.getMangaList(pageNumber)
+        executeWithResource(errorLog = { Log.e(TAG, "getMangas: Error: $it")}) {
+            coroutineScope {
+                val sadScansDeferred = async { sadScansScrapper.getMangaList() }
+                val tempestDeferred = async { tempestScrapper.getMangaList(pageNumber) }
+
+                val sadScansMangas = sadScansDeferred.await()
+                val tempestMangas = tempestDeferred.await()
+
                 val sum = sadScansMangas + tempestMangas
-                val scrapedPreviews= sum.toMangaPreviewList()
-                cache.put(Unit,scrapedPreviews)
-                scrapedPreviews
-            }else{
-                cachedPreviews
+                sum.toMangaPreviewList()
             }
         }
+
+
+
 
     // TODO: Design patern uygula
     fun getMangaDetail(detailPageUrl: String): Flow<Resource<MangaDetail>> = executeWithResource {
@@ -57,26 +56,31 @@ class MangaRepository @Inject constructor(
         }
     }
 
+
+    fun getMangaChapterList(detailPageUrl: String): Flow<Resource<List<Chapter>>> = executeWithResource {
+        when {
+            detailPageUrl.contains("sadscans") ->
+                sadScansScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
+
+            detailPageUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
+
+
+            else -> throw IllegalArgumentException("Unsupported website")
+        }
+    }
+
     private suspend fun getMangaDetailByScrapper(
         scraper: MangaScraper,
         detailPageUrl: String
     ): MangaDetail {
-        val cache = mangaDetailCache
-        val cachedDetail = cache.get(detailPageUrl)
-        return if (cachedDetail == null) {
-            cache.invalidateAll()
-            val scrapedDetail = scraper.getMangaDetail(detailPageUrl).toMangaDetail()
-            cache.put(detailPageUrl, scrapedDetail)
-            Log.d(TAG, "getMangaDetailByScrapper: remote dan yüklendi")
-            scrapedDetail
-        } else {
-            Log.d(TAG, "getMangaDetailByScrapper: cache den yüklendi")
-            cachedDetail
-        }
+        return scraper.getMangaDetail(detailPageUrl).toMangaDetail()
+
+
     }
 
     // TODO: Design patern uygula
-    fun getMangaImageUrls(chapterUrl: String): Flow<Resource<List<String>>> = executeWithResource {
+    fun getMangaImageUrls(chapterUrl: String): Flow<Resource<List<String>>> =
+        executeWithResource(errorLog = { Log.e(TAG, "getMangaImageUrls: kapak resimleri yklenirken hata oluştu $it ")}) {
         when {
             chapterUrl.contains("sadscans") -> sadScansScrapper.getMangaChapterImages(chapterUrl)
             chapterUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterImages(chapterUrl)

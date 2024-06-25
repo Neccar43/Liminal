@@ -1,5 +1,6 @@
 package com.novacodestudios.liminal.prensentation.library
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,8 +9,12 @@ import androidx.lifecycle.viewModelScope
 import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
 import com.novacodestudios.liminal.data.repository.ChapterRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
+import com.novacodestudios.liminal.domain.mapper.toChapter
+import com.novacodestudios.liminal.domain.mapper.toChapterList
+import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -36,6 +41,26 @@ class LibraryViewModel @Inject constructor(
         when (event) {
             is LibraryEvent.OnResetSeries -> resetSeries(event.seriesEntity)
             is LibraryEvent.OnDownloadSeries -> downloadSeries(event.seriesEntity)
+            is LibraryEvent.OnSeriesItemClicked -> setSelectedChapters(event.seriesEntity)
+        }
+    }
+
+    private fun setSelectedChapters(seriesEntity: SeriesEntity) {
+        viewModelScope.launch {
+           chapterRepository.getChapters(seriesEntity.id).handleResource { chapterEntityList ->
+               state = state.copy(selectedChapterList = chapterEntityList.toChapterList())
+               chapterRepository.getChapter(seriesEntity.currentChapterId).handleResource { chapterEntity ->
+                   Log.d(TAG,
+                       "setSelectedChapters:İşlemler başarılı chapter entity: $chapterEntity list: $chapterEntityList"
+                   )
+                   state = state.copy(selectedChapter = chapterEntity.toChapter())
+                   if (state.selectedChapter != null && state.selectedChapterList.isNotEmpty()) {
+                       _eventFlow.emit(UIState.NavigateReadingScreen(seriesEntity))
+                   } else {
+                       _eventFlow.emit(UIState.ShowSnackBar("Chapter yüklenirken bir hata oluştu."))
+                   }
+               }
+            }
         }
     }
 
@@ -62,6 +87,7 @@ class LibraryViewModel @Inject constructor(
 
     sealed class UIState {
         data class ShowSnackBar(val message: String) : UIState()
+        data class NavigateReadingScreen(val seriesEntity: SeriesEntity) : UIState()
     }
 
     private fun <T> Flow<Resource<T>>.handleResource(
@@ -91,16 +117,23 @@ class LibraryViewModel @Inject constructor(
             }
         }
     }
+
+    companion object {
+        private const val TAG = "LibraryViewModel"
+    }
 }
 
 data class LibraryState(
     val isLoading: Boolean = false,
     val seriesEntityList: List<SeriesEntity> = emptyList(),
+    val selectedChapterList: List<Chapter> = emptyList(),
+    val selectedChapter: Chapter? = null,
 )
 
 sealed class LibraryEvent {
     data class OnResetSeries(val seriesEntity: SeriesEntity) : LibraryEvent()
     data class OnDownloadSeries(val seriesEntity: SeriesEntity) : LibraryEvent()
+    data class OnSeriesItemClicked(val seriesEntity: SeriesEntity) : LibraryEvent()
 }
 
 

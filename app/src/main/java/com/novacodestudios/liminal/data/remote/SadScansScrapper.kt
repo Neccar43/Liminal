@@ -53,22 +53,7 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
                         withClass = "author"
                         span { findSecond { text } }
                     },
-                    chapters = document.div {
-                        withClass = "chap"
-                        div {
-                            withClass = "link"
-                            findAll {
-                                map {
-                                    ChapterDto(
-                                        title = it.a { findFirst { text } },
-                                        url = baseUrl + it.a { findFirst { eachHref.first() } },
-                                        releaseDate = "-"
-                                    )
-                                }
-                            }
-                        }
-
-                    },
+                    chapters = emptyList(),
                 )
             }
         }
@@ -107,7 +92,7 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
                             map {
                                 MangaPreviewDto(
                                     name = it.h2 { findFirst { text } },
-                                    imageUrl = "", // TODO: Görselleri alamıyorum
+                                    imageUrl = baseUrl+it.img { findFirst { attribute("data-src") } },
                                     detailPageUrl = baseUrl + it.a {
                                         withClass = "button"
                                         findFirst { eachHref.first() }
@@ -125,36 +110,28 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
         }
     }
 
-    // TODO: Bu fonksiyonda bir sıkıntı var
-     private suspend fun getMangaCoverImages(chapterUrl: String): String? {
-        return suspendCancellableCoroutine { continuation ->
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        return false
-                    }
-
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        Log.d(TAG, "onPageFinished: çalıştı")
-                        view?.evaluateJavascript(
-                            """
-                        (function() {
-                            var imgs = document.getElementsByTagName('img');
-                            var srcList = [];
-                                for (var i = 0; i < imgs.length; i++) {
-                                    srcList.push(imgs[i].src);
-                                }
-                            return JSON.stringify(imageUrl);
-                        })();
-                        """
-                        ) { result ->
-                            val imageUrl = result?.trim()?.removeSurrounding("\"")
-                            continuation.resume(imageUrl)
+    override suspend fun getMangaChapterList(detailPageUrl: String): List<ChapterDto> {
+        return skrape(HttpFetcher) {
+            request {
+                url = detailPageUrl
+            }
+            response {
+                document.div {
+                    withClass = "chap"
+                    div {
+                        withClass = "link"
+                        findAll {
+                            map {
+                                ChapterDto(
+                                    title = it.a { findFirst { text } },
+                                    url = baseUrl + it.a { findFirst { eachHref.first() } },
+                                    releaseDate = "-"
+                                )
+                            }
                         }
                     }
+
                 }
-                loadUrl(chapterUrl)
             }
         }
     }

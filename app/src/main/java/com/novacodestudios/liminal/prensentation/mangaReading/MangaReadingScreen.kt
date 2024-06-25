@@ -150,7 +150,7 @@ fun WebtoonReader(modifier: Modifier = Modifier, urls: List<String>) {
 }
 
 
-@OptIn(ExperimentalGlideComposeApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun MangaReader(
     modifier: Modifier = Modifier,
@@ -241,7 +241,6 @@ fun MangaReader(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PageIndicator(modifier: Modifier = Modifier, pagerState: PagerState) {
     val coroutineScope = rememberCoroutineScope()

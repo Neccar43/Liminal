@@ -24,10 +24,19 @@ fun Chapter.toChapterEntity(seriesId: String,index:Int) = ChapterEntity(
     isRead = false,
     //releaseDate = releaseDate,
     url = url,
-    index = index,
-    seriesId = seriesId
+    pageIndex = index,
+    seriesId = seriesId,
+    releaseDate = releaseDate
 )
 
 fun List<Chapter>.toChapterEntityList(seriesId: String) = mapIndexed { index, chapter ->
     chapter.toChapterEntity(seriesId,index)
 }
+
+fun ChapterEntity.toChapter() = Chapter(
+    title = title,
+    releaseDate = releaseDate,
+    url = url
+)
+
+fun List<ChapterEntity>.toChapterList() = map { it.toChapter() }

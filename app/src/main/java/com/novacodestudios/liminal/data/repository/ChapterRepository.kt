@@ -14,11 +14,11 @@ class ChapterRepository @Inject constructor(
      private val chapterDao: ChapterDao
 ) {
 
-    fun getChapters(seriesId: Int): Flow<Resource<List<ChapterEntity>>> = executeWithResourceFlow {
+    fun getChapters(seriesId: String): Flow<Resource<List<ChapterEntity>>> = executeWithResourceFlow {
         chapterDao.getChapters(seriesId)
     }
 
-    fun getChapter(chapterId: Int): Flow<Resource<ChapterEntity>> = executeWithResourceFlow {
+    fun getChapter(chapterId: String): Flow<Resource<ChapterEntity>> = executeWithResourceFlow {
         chapterDao.getChapter(chapterId)
     }
 
@@ -40,6 +40,10 @@ class ChapterRepository @Inject constructor(
 
     fun getChapterByIndex(index: Int, seriesId: String): Flow<Resource<ChapterEntity>> = executeWithResourceFlow{
         chapterDao.getChapterByIndex(index, seriesId)
+    }
+
+    suspend fun markChapterAsReadAndUpdateCurrentChapter(chapterId:String): Flow<Resource<Unit>> = executeWithResource {
+        chapterDao.markChapterAsReadAndUpdateCurrentChapter(chapterId)
     }
 
 }

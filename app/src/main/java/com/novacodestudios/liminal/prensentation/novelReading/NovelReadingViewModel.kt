@@ -39,7 +39,7 @@ class NovelReadingViewModel @Inject constructor(
 
     private fun getChapterList() {
         viewModelScope.launch {
-            repository.getNovelDetail(state.detailPageUrl)
+           // repository.getNovelDetail(state.detailPageUrl)
         }
     }
 
