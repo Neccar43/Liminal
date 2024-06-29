@@ -21,7 +21,9 @@ import it.skrape.selects.html5.img
 import it.skrape.selects.html5.li
 import it.skrape.selects.html5.p
 import it.skrape.selects.html5.ul
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 class TempestScrapper(private val context: Context) : MangaScraper {
@@ -62,7 +64,7 @@ class TempestScrapper(private val context: Context) : MangaScraper {
                 url = detailPageUrl
             }
             response {
-                 document.div {
+                document.div {
                     withClass = "eplister"
                     withId = "chapterlist"
 
@@ -124,42 +126,44 @@ class TempestScrapper(private val context: Context) : MangaScraper {
     }
 
     override suspend fun getMangaChapterImages(chapterUrl: String): List<String> {
-        Log.d(TAG, "getMangaChapterImages: $chapterUrl")
-        return suspendCancellableCoroutine { continuation ->
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView?,
-                        request: WebResourceRequest?
-                    ): Boolean {
-                        return false
-                    }
+        return withContext(Dispatchers.Main) {
+            Log.d(TAG, "getMangaChapterImages: $chapterUrl")
+            suspendCancellableCoroutine { continuation ->
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            return false
+                        }
 
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        view?.evaluateJavascript(
-                            """
-                            (function() {
-                                var imgs = document.getElementById('readerarea').getElementsByTagName('img');
-                                var srcList = [];
-                                for (var i = 0; i < imgs.length; i++) {
-                                    srcList.push(imgs[i].src);
-                                }
-                                return JSON.stringify(srcList);
-                            })();
-                            """
-                        ) { result ->
-                            val imageUrls = result?.parseUrls() ?: emptyList()
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            view?.evaluateJavascript(
+                                """
+                                   (function() {
+                                       var imgs = document.getElementById('readerarea').getElementsByTagName('img');
+                                       var srcList = [];
+                                       for (var i = 0; i < imgs.length; i++) {
+                                           srcList.push(imgs[i].src);
+                                       }
+                                       return JSON.stringify(srcList);
+                                   })();
+                                   """
+                            ) { result ->
+                                val imageUrls = result?.parseUrls() ?: emptyList()
 
-                            Log.d(TAG, "onPageFinished: image urls: ${imageUrls}")
-                            Log.d(TAG, "onPageFinished: result: ${result}")
-                            continuation.resume(imageUrls)
+                                Log.d(TAG, "onPageFinished: image urls: ${imageUrls}")
+                                Log.d(TAG, "onPageFinished: result: ${result}")
+                                continuation.resume(imageUrls)
+                            }
                         }
                     }
+                    loadUrl(chapterUrl)
                 }
-                loadUrl(chapterUrl)
-            }
 
+            }
         }
 
     }

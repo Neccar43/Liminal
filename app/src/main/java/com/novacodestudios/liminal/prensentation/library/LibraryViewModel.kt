@@ -14,12 +14,13 @@ import com.novacodestudios.liminal.domain.mapper.toChapterList
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,19 +48,21 @@ class LibraryViewModel @Inject constructor(
 
     private fun setSelectedChapters(seriesEntity: SeriesEntity) {
         viewModelScope.launch {
-           chapterRepository.getChapters(seriesEntity.id).handleResource { chapterEntityList ->
-               state = state.copy(selectedChapterList = chapterEntityList.toChapterList())
-               chapterRepository.getChapter(seriesEntity.currentChapterId).handleResource { chapterEntity ->
-                   Log.d(TAG,
-                       "setSelectedChapters:İşlemler başarılı chapter entity: $chapterEntity list: $chapterEntityList"
-                   )
-                   state = state.copy(selectedChapter = chapterEntity.toChapter())
-                   if (state.selectedChapter != null && state.selectedChapterList.isNotEmpty()) {
-                       _eventFlow.emit(UIState.NavigateReadingScreen(seriesEntity))
-                   } else {
-                       _eventFlow.emit(UIState.ShowSnackBar("Chapter yüklenirken bir hata oluştu."))
-                   }
-               }
+            chapterRepository.getChapters(seriesEntity.id).handleResource { chapterEntityList ->
+                state = state.copy(selectedChapterList = chapterEntityList.toChapterList())
+                chapterRepository.getChapter(seriesEntity.currentChapterId)
+                    .handleResource { chapterEntity ->
+                        Log.d(
+                            TAG,
+                            "setSelectedChapters:İşlemler başarılı chapter entity: $chapterEntity list: $chapterEntityList"
+                        )
+                        state = state.copy(selectedChapter = chapterEntity.toChapter())
+                        if (state.selectedChapter != null && state.selectedChapterList.isNotEmpty()) {
+                            _eventFlow.emit(UIState.NavigateReadingScreen(seriesEntity))
+                        } else {
+                            _eventFlow.emit(UIState.ShowSnackBar("Chapter yüklenirken bir hata oluştu."))
+                        }
+                    }
             }
         }
     }
@@ -79,8 +82,8 @@ class LibraryViewModel @Inject constructor(
 
     private fun getSeriesList() {
         viewModelScope.launch {
-            seriesRepository.getAllSeries().handleResource {
-                state = state.copy(seriesEntityList = it)
+            seriesRepository.getAllSeries().handleResource { seriesEntityList ->
+                state = state.copy(seriesEntityList = seriesEntityList)
             }
         }
     }
@@ -93,27 +96,30 @@ class LibraryViewModel @Inject constructor(
     private fun <T> Flow<Resource<T>>.handleResource(
         onSuccess: suspend (T) -> Unit
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             this@handleResource.collectLatest { resource ->
-                when (resource) {
-                    is Resource.Error -> {
-                        state = state.copy(isLoading = false)
-                        _eventFlow.emit(
-                            UIState.ShowSnackBar(
-                                resource.exception.localizedMessage ?: "An error occurred"
+                withContext(Dispatchers.Main) {
+                    when (resource) {
+                        is Resource.Error -> {
+                            state = state.copy(isLoading = false)
+                            _eventFlow.emit(
+                                UIState.ShowSnackBar(
+                                    resource.exception.localizedMessage ?: "An error occurred"
+                                )
                             )
-                        )
-                    }
+                        }
 
-                    Resource.Loading -> {
-                        state = state.copy(isLoading = true)
-                    }
+                        Resource.Loading -> {
+                            state = state.copy(isLoading = true)
+                        }
 
-                    is Resource.Success -> {
-                        state = state.copy(isLoading = false)
-                        onSuccess(resource.data)
+                        is Resource.Success -> {
+                            state = state.copy(isLoading = false)
+                            onSuccess(resource.data)
+                        }
                     }
                 }
+
             }
         }
     }

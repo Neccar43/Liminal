@@ -1,6 +1,8 @@
 package com.novacodestudios.liminal.data.remote
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -8,14 +10,12 @@ import android.webkit.WebViewClient
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.NovelDetailDto
 import com.novacodestudios.liminal.data.remote.dto.NovelPreviewDto
-import com.novacodestudios.liminal.domain.model.NovelDetail
-import com.novacodestudios.liminal.domain.model.NovelPreview
 import it.skrape.core.document
 import it.skrape.core.htmlDocument
 import it.skrape.fetcher.HttpFetcher
 import it.skrape.fetcher.response
 import it.skrape.fetcher.skrape
-import it.skrape.selects.eachText
+import it.skrape.selects.DocElement
 import it.skrape.selects.html5.a
 import it.skrape.selects.html5.div
 import it.skrape.selects.html5.h1
@@ -25,13 +25,12 @@ import it.skrape.selects.html5.p
 import it.skrape.selects.html5.span
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import io.github.reactivecircus.cache4k.Cache
-import kotlin.time.Duration.Companion.hours
 
 // TODO: diğer scraper lar için linkler https://novelaozora.com/manga/issizin-reenkarnasyonu/
 
 // TODO: https://namevt.com/mushoku-tensei-ln-onceki-bolumleri-okuma-bilgilendirmesi/ 
 
+@Suppress("CANDIDATE_CHOSEN_USING_OVERLOAD_RESOLUTION_BY_LAMBDA_ANNOTATION")
 class TurkceLightNovelScrapper(private val context: Context) {
 
     suspend fun getNovelList(): List<NovelPreviewDto> {
@@ -72,7 +71,7 @@ class TurkceLightNovelScrapper(private val context: Context) {
     }
 
     suspend fun getNovelDetail(detailPageUrl: String): NovelDetailDto {
-        val detail= skrape(HttpFetcher) {
+        val detail = skrape(HttpFetcher) {
             request {
                 url = detailPageUrl
             }
@@ -107,7 +106,6 @@ class TurkceLightNovelScrapper(private val context: Context) {
 
     }
 
-    // TODO: Novel bölümünün içindeki görselleri de göster
     suspend fun getNovelChapterContent(chapterUrl: String): List<String> {
         return skrape(HttpFetcher) {
             request {
@@ -115,38 +113,59 @@ class TurkceLightNovelScrapper(private val context: Context) {
             }
             response {
                 htmlDocument {
+                    val contentList = mutableListOf<String>()
                     div {
                         withClass = "text-left"
                         p {
                             findAll {
-                                eachText
+                                forEach { paragraphElement ->
+                                    contentList.add(extractTextAndSrcLinks(paragraphElement))
+                                }
                             }
                         }
                     }
+                    //Log.d(TAG, "getNovelChapterContent: $contentList")
+                    contentList
                 }
             }
         }
     }
 
+    private fun extractTextAndSrcLinks(element: DocElement): String {
+        val isImage = element.toString().contains("<img")
+        if (isImage) {
+            val srcRegex = """src="([^"]+)""".toRegex()
+            val matchResult = srcRegex.find(element.toString())
+            matchResult?.let {
+                val srcLink = it.groupValues[1]
+                Log.d(TAG, "extractTextAndSrcLinks: is image true $srcLink")
+                return srcLink
+            }
+        }
+        return element.text
+
+    }
+
+
     suspend fun getNovelChapterUrls(
-        //context: Context,
         detailPageUrl: String
     ): List<ChapterDto> {
         return suspendCancellableCoroutine { continuation ->
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView?,
-                        request: WebResourceRequest?
-                    ): Boolean {
-                        return false
-                    }
+            Handler(Looper.getMainLooper()).post {
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?,
+                            request: WebResourceRequest?
+                        ): Boolean {
+                            return false
+                        }
 
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        Log.d(TAG, "onPageFinished: $url")
-                        view?.evaluateJavascript(
-                            """
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            Log.d(TAG, "onPageFinished: $url")
+                            view?.evaluateJavascript(
+                                """
                     (function() {
                         var chapters = document.querySelectorAll('ul.main.version-chap.no-volumn.active li.wp-manga-chapter');
                         var chapterList = [];
@@ -159,18 +178,17 @@ class TurkceLightNovelScrapper(private val context: Context) {
                         return JSON.stringify(chapterList);
                     })();
                     """
-                        ) { result ->
-                            val chapterDtos = parseChapterJson(result)
-                            Log.d(TAG, "onPageFinished: chapters: $chapterDtos")
-                            continuation.resume(chapterDtos)
+                            ) { result ->
+                                val chapterDtos = parseChapterJson(result)
+                                Log.d(TAG, "onPageFinished: chapters: $chapterDtos")
+                                continuation.resume(chapterDtos)
+                            }
                         }
                     }
+                    loadUrl(detailPageUrl)
                 }
-                loadUrl(detailPageUrl)
             }
-
         }
-
     }
 
     private fun parseChapterJson(jsonString: String?): List<ChapterDto> {

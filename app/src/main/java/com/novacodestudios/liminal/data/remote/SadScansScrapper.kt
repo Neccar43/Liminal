@@ -1,14 +1,10 @@
 package com.novacodestudios.liminal.data.remote
 
 import android.content.Context
-import android.util.Log
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
-import com.novacodestudios.liminal.data.remote.dto.RecentMangaChaptersDto
 import com.novacodestudios.liminal.data.remote.dto.MangaDetailDto
 import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
+import com.novacodestudios.liminal.data.remote.dto.RecentMangaChaptersDto
 import it.skrape.core.document
 import it.skrape.core.htmlDocument
 import it.skrape.fetcher.HttpFetcher
@@ -21,11 +17,9 @@ import it.skrape.selects.html5.h2
 import it.skrape.selects.html5.img
 import it.skrape.selects.html5.p
 import it.skrape.selects.html5.span
-import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
-import kotlin.coroutines.resume
 
-class SadScansScrapper @Inject constructor(private val context: Context):MangaScraper {
+class SadScansScrapper @Inject constructor(private val context: Context) : MangaScraper {
     override val baseUrl: String
         get() = "https://sadscans.com/"
 
@@ -81,7 +75,7 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
     override suspend fun getMangaList(pageNumber: Int): List<MangaPreviewDto> {
         return skrape(HttpFetcher) {
             request {
-                url = baseUrl+"series"
+                url = baseUrl + "series"
             }
 
             response {
@@ -92,7 +86,7 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
                             map {
                                 MangaPreviewDto(
                                     name = it.h2 { findFirst { text } },
-                                    imageUrl = baseUrl+it.img { findFirst { attribute("data-src") } },
+                                    imageUrl = baseUrl + it.img { findFirst { attribute("data-src") } },
                                     detailPageUrl = baseUrl + it.a {
                                         withClass = "button"
                                         findFirst { eachHref.first() }
@@ -182,7 +176,7 @@ class SadScansScrapper @Inject constructor(private val context: Context):MangaSc
         }
     }
 
-    companion object{
+    companion object {
         private const val TAG = "SadScansScrapper"
     }
 }

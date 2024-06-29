@@ -9,29 +9,34 @@ import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class SeriesRepository @Inject constructor(
-    private val seriesDao: SeriesDao
-){
+    private val dao: SeriesDao
+) {
     fun getSeriesById(id: String): Flow<Resource<SeriesEntity>> = executeWithResourceFlow {
-        seriesDao.getSeriesById(id)
+        dao.getSeriesById(id)
     }
 
     fun getAllSeries(): Flow<Resource<List<SeriesEntity>>> = executeWithResourceFlow {
-        seriesDao.getAllSeries()
+        dao.getAllSeries()
     }
 
-    suspend fun upsert(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource{
-        seriesDao.upsert(series)
+    suspend fun upsert(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource {
+        dao.upsert(series)
     }
 
-    suspend fun insertSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource(){
-        seriesDao.insert(series)
+    suspend fun insertSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource() {
+        dao.insert(series)
     }
 
-    suspend fun deleteSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource{
-        seriesDao.deleteSeries(series)
+    suspend fun deleteSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource {
+        dao.deleteSeries(series)
     }
 
-    companion object{
+    fun getSeriesByChapterId(chapterId: String): Flow<Resource<SeriesEntity>> =
+        executeWithResourceFlow {
+            dao.getSeriesEntityByChapterId(chapterId)
+        }
+
+    companion object {
         private const val TAG = "SeriesRepository"
     }
 

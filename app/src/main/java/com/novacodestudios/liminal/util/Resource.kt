@@ -25,7 +25,10 @@ sealed class Resource<out T> {
     }
 }*/
 
-fun <T> executeWithResource(errorLog:(Exception)->Unit={}, block: suspend () -> T): Flow<Resource<T>> {
+fun <T> executeWithResource(
+    errorLog: (Exception) -> Unit = {},
+    block: suspend () -> T
+): Flow<Resource<T>> {
     return flow {
         emit(Resource.loading())
         try {

@@ -10,3 +10,6 @@ enum class SeriesType : Parcelable {
     MANGA,
     NOVEL
 }
+
+fun String.toType(): SeriesType =
+    SeriesType.entries.find { it.name == this } ?: throw IllegalArgumentException()

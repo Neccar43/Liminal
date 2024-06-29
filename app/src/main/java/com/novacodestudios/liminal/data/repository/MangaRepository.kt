@@ -24,7 +24,7 @@ class MangaRepository @Inject constructor(
 
 
     fun getMangas(pageNumber: Int = 1): Flow<Resource<List<MangaPreview>>> =
-        executeWithResource(errorLog = { Log.e(TAG, "getMangas: Error: $it")}) {
+        executeWithResource(errorLog = { Log.e(TAG, "getMangas: Error: $it") }) {
             coroutineScope {
                 val sadScansDeferred = async { sadScansScrapper.getMangaList() }
                 val tempestDeferred = async { tempestScrapper.getMangaList(pageNumber) }
@@ -36,8 +36,6 @@ class MangaRepository @Inject constructor(
                 sum.toMangaPreviewList()
             }
         }
-
-
 
 
     // TODO: Design patern uygula
@@ -57,17 +55,20 @@ class MangaRepository @Inject constructor(
     }
 
 
-    fun getMangaChapterList(detailPageUrl: String): Flow<Resource<List<Chapter>>> = executeWithResource {
-        when {
-            detailPageUrl.contains("sadscans") ->
-                sadScansScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
+    fun getMangaChapterList(detailPageUrl: String): Flow<Resource<List<Chapter>>> =
+        executeWithResource {
+            when {
+                detailPageUrl.contains("sadscans") ->
+                    sadScansScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
 
-            detailPageUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
+                detailPageUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterList(
+                    detailPageUrl
+                ).map { it.toChapter() }
 
 
-            else -> throw IllegalArgumentException("Unsupported website")
+                else -> throw IllegalArgumentException("Unsupported website")
+            }
         }
-    }
 
     private suspend fun getMangaDetailByScrapper(
         scraper: MangaScraper,
@@ -80,15 +81,23 @@ class MangaRepository @Inject constructor(
 
     // TODO: Design patern uygula
     fun getMangaImageUrls(chapterUrl: String): Flow<Resource<List<String>>> =
-        executeWithResource(errorLog = { Log.e(TAG, "getMangaImageUrls: kapak resimleri yklenirken hata oluştu $it ")}) {
-        when {
-            chapterUrl.contains("sadscans") -> sadScansScrapper.getMangaChapterImages(chapterUrl)
-            chapterUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterImages(chapterUrl)
-            else -> throw IllegalArgumentException("Unsupported website")
-        }
-    }
+        executeWithResource(errorLog = {
+            Log.e(
+                TAG,
+                "getMangaImageUrls: kapak resimleri yklenirken hata oluştu $it "
+            )
+        }) {
+            when {
+                chapterUrl.contains("sadscans") -> sadScansScrapper.getMangaChapterImages(chapterUrl)
+                chapterUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterImages(
+                    chapterUrl
+                )
 
-    companion object{
+                else -> throw IllegalArgumentException("Unsupported website")
+            }
+        }
+
+    companion object {
         private const val TAG = "MangaRepository"
     }
 

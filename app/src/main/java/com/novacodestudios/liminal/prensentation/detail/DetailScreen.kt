@@ -2,7 +2,6 @@ package com.novacodestudios.liminal.prensentation.detail
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,29 +9,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Scaffold
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,11 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.placeholder
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.MangaDetail
 import com.novacodestudios.liminal.domain.model.SeriesType
-import com.novacodestudios.liminal.prensentation.library.LibraryViewModel
+import com.novacodestudios.liminal.prensentation.component.LiminalProgressIndicator
+import com.novacodestudios.liminal.prensentation.detail.component.ChapterItem
+import com.novacodestudios.liminal.prensentation.detail.component.DetailTopBar
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
 
@@ -153,7 +142,7 @@ fun DetailContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = state.detail?.summary ?: "null",
+                text = state.detail?.summary ?: "",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -165,19 +154,20 @@ fun DetailContent(
             Button(modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp), onClick = {
-                    if (state.chapterListError!=null){
-                        onEvent(DetailEvent.OnChapterListLoadRetry)
-                        return@Button
-                    }
+                if (state.chapterListError != null) {
+                    onEvent(DetailEvent.OnChapterListLoadRetry)
+                    return@Button
+                }
 
+                onEvent(DetailEvent.OnSeriesChapterClick(firstChapter!!))
                 when (state.detail!!.type) {
                     SeriesType.MANGA -> onNavigateMangaReadingScreen(
-                        firstChapter!!,
-                        state.detail.chapters
+                        firstChapter,
+                        state.chapterList
                     )
 
                     SeriesType.NOVEL -> onNavigateNovelReadingScreen(
-                        firstChapter!!,
+                        firstChapter,
                         state.detailPageUrl
                     )
                 }
@@ -186,7 +176,7 @@ fun DetailContent(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                     return@Button
                 }
-                if (state.chapterListError!=null){
+                if (state.chapterListError != null) {
                     Text(text = "Yeniden Deneyin")
                     return@Button
                 }
@@ -215,7 +205,7 @@ fun DetailContent(
                             when (state.detail!!.type) {
                                 SeriesType.MANGA -> onNavigateMangaReadingScreen(
                                     chapter,
-                                    state.detail.chapters
+                                    state.chapterList
                                 )
 
                                 SeriesType.NOVEL -> onNavigateNovelReadingScreen(
@@ -232,56 +222,6 @@ fun DetailContent(
         }
         LiminalProgressIndicator(Modifier.fillMaxSize(), isLoading = state.isLoading)
     }
-}
-
-@Composable
-fun LiminalProgressIndicator(modifier: Modifier = Modifier, isLoading: Boolean) {
-    if (isLoading) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier)
-        }
-    }
-}
-
-@Composable
-fun ChapterItem(
-    modifier: Modifier = Modifier,
-    chapter: Chapter,
-    onChapterClick: (Chapter) -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { onChapterClick(chapter) },
-    ) {
-        Text(
-            text = chapter.title,
-            style = MaterialTheme.typography.titleSmall
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = chapter.releaseDate,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DetailTopBar(scrollBehavior: TopAppBarScrollBehavior, onNavigateUp: () -> Unit) {
-    TopAppBar(
-        modifier = Modifier,
-        title = { Text(text = "Detail") },
-        scrollBehavior = scrollBehavior,
-        navigationIcon = {
-            IconButton(onClick = { onNavigateUp() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-        })
 }
 
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)

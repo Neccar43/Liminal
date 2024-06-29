@@ -11,10 +11,6 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.Locale
-import android.text.format.DateUtils
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import java.util.concurrent.TimeUnit
 
 fun String.capitalizeFirstLetter(): String {
@@ -56,12 +52,12 @@ inline fun <reified T : Parcelable> parcelableListType(
 
     override fun serializeAsValue(value: List<T>): String = json.encodeToString(value)
 
-    override fun put(bundle: Bundle, key: String, value: List<T>) = bundle.putParcelableArrayList(key, ArrayList(value))
+    override fun put(bundle: Bundle, key: String, value: List<T>) =
+        bundle.putParcelableArrayList(key, ArrayList(value))
 }
 
 
-
-fun String.encodeUrl():String= URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
+fun String.encodeUrl(): String = URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
 
 fun List<Chapter>.getNextChapter(currentChapter: Chapter): Chapter? {
     return try {
@@ -89,7 +85,7 @@ fun String.hashToMD5(): String {
     return digested.joinToString("") { String.format("%02x", it) }
 }
 
-fun Chapter.withEncodedUrl():Chapter= this.copy(url = this.url.encodeUrl())
+fun Chapter.withEncodedUrl(): Chapter = this.copy(url = this.url.encodeUrl())
 
 
 fun formatTimeAgo(timeInMillis: Long): String {
@@ -102,18 +98,22 @@ fun formatTimeAgo(timeInMillis: Long): String {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
             "$minutes dakika önce"
         }
+
         diff < TimeUnit.DAYS.toMillis(1) -> {
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             "$hours saat önce"
         }
+
         diff < TimeUnit.DAYS.toMillis(30) -> {
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             "$days gün önce"
         }
+
         diff < TimeUnit.DAYS.toMillis(365) -> {
             val months = TimeUnit.MILLISECONDS.toDays(diff) / 30
             "$months ay önce"
         }
+
         else -> {
             val years = TimeUnit.MILLISECONDS.toDays(diff) / 365
             "$years yıl önce"

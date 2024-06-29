@@ -5,7 +5,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
 
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -17,8 +16,7 @@
         android:theme="@style/Theme.Liminal"
         tools:targetApi="31"
         android:usesCleartextTraffic="true"
-        android:name=".LiminalApp"
-        >
+        android:name=".LiminalApp">
         <activity
             android:name=".MainActivity"
             android:exported="true"

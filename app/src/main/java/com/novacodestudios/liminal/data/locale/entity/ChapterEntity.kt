@@ -19,5 +19,5 @@ data class ChapterEntity(
     val url: String,
     val pageIndex: Int,
     val seriesId: String,
-    val releaseDate:String,
+    val releaseDate: String,
 )

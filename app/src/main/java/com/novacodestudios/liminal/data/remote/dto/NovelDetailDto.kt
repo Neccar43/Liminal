@@ -6,7 +6,7 @@ data class NovelDetailDto(
     val author: String,
     //val status: String, // TODO: Enuma çevir
     //val releaseDate: String,
-    val rate:String,
+    val rate: String,
     val summary: String,
     val chapters: List<ChapterDto>
 )

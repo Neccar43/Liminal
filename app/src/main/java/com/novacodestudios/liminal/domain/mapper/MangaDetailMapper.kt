@@ -17,4 +17,4 @@ fun MangaDetail.toMangaDetailDto() = MangaDetailDto(
     summary = summary,
     author = author,
     chapters = chapters.map { it.toChapterDto() },
-    )
+)

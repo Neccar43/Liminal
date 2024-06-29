@@ -26,12 +26,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+           // signingConfig = null // TODO: Burayı düzelt
         }
+
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -50,7 +54,7 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "/META-INF/DEPENDENCIES"
-            excludes+="mozilla/public-suffix-list.txt"
+            excludes += "mozilla/public-suffix-list.txt"
         }
     }
 }
@@ -74,19 +78,18 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
 
-
     // Material
     val materialVersion = "1.6.2"
-    implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
+    // implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
     implementation("androidx.compose.material:material-icons-extended:$materialVersion")
-    implementation("androidx.compose.animation:animation:$materialVersion")
+    // implementation("androidx.compose.animation:animation:$materialVersion")
     implementation("androidx.compose.material:material:$materialVersion")
 
 // Compose dependencies
     val lifeCycleVersion = "2.7.0"
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifeCycleVersion")
 
-    implementation("androidx.navigation:navigation-compose:2.8.0-beta03")
+    implementation("androidx.navigation:navigation-compose:2.8.0-alpha08")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     val coroutinesVersion = "1.7.3"
@@ -106,7 +109,7 @@ dependencies {
     implementation("it.skrape:skrapeit:1.2.2")
 
     //Coil compose
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    //implementation("io.coil-kt:coil-compose:2.6.0")
 
     val hiltVersion = "2.49"
     implementation("com.google.dagger:hilt-android:$hiltVersion")
@@ -125,12 +128,8 @@ dependencies {
 
     implementation("net.engawapg.lib:zoomable:1.6.1")
 
-    implementation("io.github.reactivecircus.cache4k:cache4k:0.13.0")
-
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-
-
+    // implementation("io.github.reactivecircus.cache4k:cache4k:0.13.0")
+    //implementation("androidx.datastore:datastore-preferences:1.1.1")
 
 
 }

@@ -13,14 +13,15 @@ import com.novacodestudios.liminal.domain.model.NovelPreview
 import com.novacodestudios.liminal.domain.model.SeriesPreview
 import com.novacodestudios.liminal.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.SocketTimeoutException
 import javax.inject.Inject
-import kotlin.system.measureTimeMillis
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -35,72 +36,82 @@ class HomeViewModel @Inject constructor(
     val eventFlow = _eventFlow.asSharedFlow()
 
     /*
-    manga + novel 6656ms - 6600ms
-    manga 1617ms 2601ms 1742ms
-    novel 5558ms 2822ms 202ms
-
+    Ekrandaki donmalar Dispatcherın IO olmamasından kaynaklanıyormuş
+    tek başına viewmodelscope yeterli değilmiş
+    ama sonrasında Maine bağlamak gerekiyormuş
      */
     init {
-        getContents()
-
+        viewModelScope.launch {
+            getContents()
+        }
     }
 
     private fun getContents() {
-        getNovels()
-        getMangas()
-
+        viewModelScope.launch(Dispatchers.IO) {
+            getNovels()
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            getMangas()
+        }
     }
 
     private fun getNovels() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             novelRepo.getNovelList().collectLatest { resource ->
-                when (resource) {
-                    is Resource.Error -> {
-                        state = state.copy(isLoading = false)
-                        Log.e(TAG, "getNovels: Hata ${resource.exception}")
-                        _eventFlow.emit(
-                            UIEvent.ShowToast(
-                                resource.exception.localizedMessage ?: "An error occurred"
+                withContext(Dispatchers.Main) {
+                    when (resource) {
+                        is Resource.Error -> {
+                            state = state.copy(isLoading = false)
+                            Log.e(TAG, "getNovels: Hata ${resource.exception}")
+                            _eventFlow.emit(
+                                UIEvent.ShowToast(
+                                    resource.exception.localizedMessage ?: "An error occurred"
+                                )
                             )
-                        )
-                        if (resource.exception is SocketTimeoutException) {
-                            delay(1000L)
-                            getNovels()
-                            return@collectLatest
+                            // TODO: Sınırla
+                            if (resource.exception is SocketTimeoutException) {
+                                delay(1000L)
+                                getNovels()
+                                return@withContext
+                            }
+
                         }
 
-                    }
-
-                    Resource.Loading -> state = state.copy(isLoading = true)
-                    is Resource.Success -> {
-                        state = state.copy(isLoading = false, novelList = resource.data)
+                        Resource.Loading -> state = state.copy(isLoading = true)
+                        is Resource.Success -> {
+                            state = state.copy(isLoading = false, novelList = resource.data)
+                        }
                     }
                 }
+
             }
         }
     }
 
 
     private fun getMangas() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             mangaRepo.getMangas().collectLatest { resource ->
-                when (resource) {
-                    is Resource.Error -> {
-                        state = state.copy(isLoading = false)
-                        Log.e(TAG, "getMangas: Hata: ${resource.exception}")
-                        _eventFlow.emit(
-                            UIEvent.ShowToast(
-                                resource.exception.localizedMessage ?: "An error occurred"
+                withContext(Dispatchers.Main) {
+                    when (resource) {
+                        is Resource.Error -> {
+                            state = state.copy(isLoading = false)
+                            Log.e(TAG, "getMangas: Hata: ${resource.exception}")
+                            _eventFlow.emit(
+                                UIEvent.ShowToast(
+                                    resource.exception.localizedMessage ?: "An error occurred"
+                                )
                             )
-                        )
-                    }
+                        }
 
-                    Resource.Loading -> state = state.copy(isLoading = true)
-                    is Resource.Success -> {
-                        state = state.copy(isLoading = false, mangaList = resource.data)
-                        Log.d(TAG, "getMangas: ${resource.data}")
+                        Resource.Loading -> state = state.copy(isLoading = true)
+                        is Resource.Success -> {
+                            state = state.copy(isLoading = false, mangaList = resource.data)
+                            Log.d(TAG, "getMangas: ${resource.data}")
+                        }
                     }
                 }
+
             }
         }
     }

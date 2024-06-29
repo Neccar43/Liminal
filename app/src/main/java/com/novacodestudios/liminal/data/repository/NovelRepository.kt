@@ -29,25 +29,6 @@ class NovelRepository @Inject constructor(
             turkceLightNovelScrapper.getNovelChapterContent(chapterUrl)
         }
 
-    /*fun getNovelDetail(detailPageUrl: String): Flow<Resource<NovelDetail>> =
-        executeWithResource(
-            errorLog = { Log.e(TAG, "getNovelDetail: $it") }
-        ) {
-            val cache = novelDetailCache
-            val cachedDetail = cache.get(detailPageUrl)
-            Log.d(TAG, "getNovelDetail: çalıştı")
-            if (cachedDetail == null || cachedDetail.chapters.isEmpty()) {
-                cache.invalidateAll()
-                val scrapedDetail =
-                    turkceLightNovelScrapper.getNovelDetail(detailPageUrl).toNovelDetail()
-                cache.put(detailPageUrl, scrapedDetail)
-                Log.d(TAG, "getNovelDetail: veri remote dan getirildi")
-                scrapedDetail
-            } else {
-                Log.d(TAG, "getNovelDetail: veri cache dan getirildi")
-                cachedDetail
-            }
-        }*/
 
     fun getNovelDetail(detailPageUrl: String): Flow<Resource<NovelDetail>> =
         executeWithResource(

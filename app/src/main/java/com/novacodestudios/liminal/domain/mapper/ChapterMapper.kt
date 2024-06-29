@@ -18,7 +18,7 @@ fun Chapter.toChapterDto() = ChapterDto(
     url = url
 )
 
-fun Chapter.toChapterEntity(seriesId: String,index:Int) = ChapterEntity(
+fun Chapter.toChapterEntity(seriesId: String, index: Int) = ChapterEntity(
     id = url.hashToMD5(),
     title = title,
     isRead = false,
@@ -30,7 +30,7 @@ fun Chapter.toChapterEntity(seriesId: String,index:Int) = ChapterEntity(
 )
 
 fun List<Chapter>.toChapterEntityList(seriesId: String) = mapIndexed { index, chapter ->
-    chapter.toChapterEntity(seriesId,index)
+    chapter.toChapterEntity(seriesId, index)
 }
 
 fun ChapterEntity.toChapter() = Chapter(

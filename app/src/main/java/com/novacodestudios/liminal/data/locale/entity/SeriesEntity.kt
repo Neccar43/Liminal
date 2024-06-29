@@ -11,6 +11,7 @@ data class SeriesEntity(
     val lastReadingDateTime: Long,
     val detailPageUrl: String,
     val currentChapterId: String,
+    val currentChapterName: String? = null,
     val currentPageIndex: Int,
     val isManga: Boolean
 )
