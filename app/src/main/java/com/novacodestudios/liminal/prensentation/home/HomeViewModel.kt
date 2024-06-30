@@ -145,9 +145,20 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
+    // TODO: tempset i de implement et
     private fun search() {
-        // TODO: Implement search
+        viewModelScope.launch {
+            val query=state.query
+            val searchResult=state.seriesList.filter { series ->
+                val matchName=query?.let { series.name.contains(it, ignoreCase = true) }?:true
+                matchName
+            }
+            state = state.copy(searchSeries = searchResult)
+            if (query.isNullOrEmpty()||query.isBlank()) {
+                state = state.copy(searchSeries = emptyList())
+                return@launch
+            }
+        }
     }
 
     sealed class UIEvent {

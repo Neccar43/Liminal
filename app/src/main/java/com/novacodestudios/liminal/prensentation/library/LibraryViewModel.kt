@@ -52,6 +52,8 @@ class LibraryViewModel @Inject constructor(
                 state = state.copy(selectedChapterList = chapterEntityList.toChapterList())
                 chapterRepository.getChapter(seriesEntity.currentChapterId)
                     .handleResource { chapterEntity ->
+                        // TODO: Row daki on clickten ötürü resetleme sırasında burası da çalışıyor ve null geliyor
+                        if (chapterEntity==null) return@handleResource
                         Log.d(
                             TAG,
                             "setSelectedChapters:İşlemler başarılı chapter entity: $chapterEntity list: $chapterEntityList"

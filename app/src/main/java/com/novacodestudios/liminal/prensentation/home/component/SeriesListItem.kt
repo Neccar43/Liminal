@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.novacodestudios.liminal.domain.model.SeriesPreview
@@ -35,7 +36,7 @@ fun SeriesListItem(
             .width(itemWidth)
     ) {
 
-        GlideImage(
+        AsyncImage(
             model = series.imageUrl,
             contentDescription = null,
             modifier = Modifier

@@ -109,7 +109,7 @@ dependencies {
     implementation("it.skrape:skrapeit:1.2.2")
 
     //Coil compose
-    //implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
     val hiltVersion = "2.49"
     implementation("com.google.dagger:hilt-android:$hiltVersion")
@@ -136,6 +136,9 @@ dependencies {
 
     implementation("androidx.paging:paging-common-ktx:3.3.0")
     implementation("androidx.paging:paging-compose:1.0.0-alpha16")
+
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jsoup:jsoup:1.17.2")
 
 
 }

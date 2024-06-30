@@ -1,6 +1,7 @@
 package com.novacodestudios.liminal.prensentation.library
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -82,9 +83,12 @@ fun LibraryScreenContent(
                     SeriesItem(
                         modifier = Modifier.fillMaxWidth(),
                         series = seriesEntity,
-                        onReset = { onEvent(LibraryEvent.OnResetSeries(it)) },
+                        onReset = {
+                            Log.d(TAG, "onReset çalıştı")
+                            onEvent(LibraryEvent.OnResetSeries(it)) },
                         onDownload = {}, // TODO: İndirme özelliğini ekle
                         onClick = {
+                            Log.d(TAG, "onClick çalıştı")
                             onEvent(LibraryEvent.OnSeriesItemClicked(seriesEntity))
                         }
                     )
@@ -178,3 +182,5 @@ private fun Item() {
         )
     }
 }
+
+private const val TAG = "LibraryScreen"

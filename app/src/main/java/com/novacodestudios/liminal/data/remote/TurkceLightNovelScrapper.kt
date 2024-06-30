@@ -24,19 +24,24 @@ import it.skrape.selects.html5.img
 import it.skrape.selects.html5.p
 import it.skrape.selects.html5.span
 import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.OkHttpClient
 import kotlin.coroutines.resume
+import okhttp3.Request
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
 
 // TODO: diğer scraper lar için linkler https://novelaozora.com/manga/issizin-reenkarnasyonu/
 
 // TODO: https://namevt.com/mushoku-tensei-ln-onceki-bolumleri-okuma-bilgilendirmesi/ 
 
-@Suppress("CANDIDATE_CHOSEN_USING_OVERLOAD_RESOLUTION_BY_LAMBDA_ANNOTATION")
 class TurkceLightNovelScrapper(private val context: Context) {
 
     suspend fun getNovelList(): List<NovelPreviewDto> {
         return skrape(HttpFetcher) {
             request {
                 url = "https://turkcelightnovels.com"
+                timeout=60_000
             }
             response {
                 htmlDocument {
@@ -74,6 +79,7 @@ class TurkceLightNovelScrapper(private val context: Context) {
         val detail = skrape(HttpFetcher) {
             request {
                 url = detailPageUrl
+                timeout=60_000
             }
             response {
                 NovelDetailDto(
@@ -106,46 +112,34 @@ class TurkceLightNovelScrapper(private val context: Context) {
 
     }
 
+    //okhttp çözümü 1296 917 904 1952
     suspend fun getNovelChapterContent(chapterUrl: String): List<String> {
-        return skrape(HttpFetcher) {
-            request {
-                url = chapterUrl
-            }
-            response {
-                htmlDocument {
-                    val contentList = mutableListOf<String>()
-                    div {
-                        withClass = "text-left"
-                        p {
-                            findAll {
-                                forEach { paragraphElement ->
-                                    contentList.add(extractTextAndSrcLinks(paragraphElement))
-                                }
-                            }
-                        }
-                    }
-                    //Log.d(TAG, "getNovelChapterContent: $contentList")
-                    contentList
-                }
-            }
-        }
+        val client = OkHttpClient()
+
+        val request = Request.Builder()
+            .url(chapterUrl)
+            .build()
+
+        val response = client.newCall(request).execute()
+        val htmlContent = response.body?.string() ?: ""
+
+        return parseHtmlContent(htmlContent)
     }
 
-    private fun extractTextAndSrcLinks(element: DocElement): String {
-        val isImage = element.toString().contains("<img")
-        if (isImage) {
-            val srcRegex = """src="([^"]+)""".toRegex()
-            val matchResult = srcRegex.find(element.toString())
-            matchResult?.let {
-                val srcLink = it.groupValues[1]
-                Log.d(TAG, "extractTextAndSrcLinks: is image true $srcLink")
-                return srcLink
+    private fun parseHtmlContent(html: String): List<String> {
+        val doc: Document = Jsoup.parse(html)
+        val elements: List<Element> = doc.select("div.text-left p, div.text-left img")
+        val resultList = mutableListOf<String>()
+
+        for (element in elements) {
+            if (element.tagName() == "p") {
+                resultList.add(element.text().trim())
+            } else if (element.tagName() == "img") {
+                resultList.add(element.attr("src"))
             }
         }
-        return element.text
-
+        return resultList
     }
-
 
     suspend fun getNovelChapterUrls(
         detailPageUrl: String

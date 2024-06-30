@@ -12,6 +12,7 @@ import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import kotlin.system.measureTimeMillis
 
 class NovelRepository @Inject constructor(
     private val turkceLightNovelScrapper: TurkceLightNovelScrapper

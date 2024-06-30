@@ -1,5 +1,6 @@
 package com.novacodestudios.liminal.prensentation.mangaReading.component
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,7 +53,7 @@ fun MangaReader(
 ) {
     if (urls.isEmpty()) return
 
-    val newUrls = remember { mutableStateListOf<String>() }
+    var newUrls by remember { mutableStateOf(listOf<String>()) }
     var isNextChapter by remember {
         mutableStateOf(false)
     }
@@ -61,32 +62,33 @@ fun MangaReader(
     }
 
     LaunchedEffect(urls) {
-        newUrls.clear()
-        newUrls.add("")
-        newUrls.addAll(urls)
-        newUrls.add("")
+        Log.d(TAG, "MangaReader: -----------------------------------------------------------------------------")
+        newUrls= listOf("")+urls+listOf("")
+        Log.d(TAG, "MangaReader: newUrl ayarlandı")
     }
 
     val pagerState = rememberPagerState(pageCount = { newUrls.size })
     val zoomState = rememberZoomState()
 
-    LaunchedEffect(urls) {
-        pagerState.scrollToPage(1)
-    }
 
     LaunchedEffect(isNextChapter) {
+        Log.d(TAG, "MangaReader: is next chapter çalıştı")
         if (isNextChapter) {
+            Log.d(TAG, "MangaReader: isNextChapter true 1. sayfaya scroll edildi")
             pagerState.scrollToPage(1)
             isNextChapter = false
         }
     }
     LaunchedEffect(key1 = isPreviousChapter) {
+        Log.d(TAG, "MangaReader: isPreviousChapter çalıştı")
         if (isPreviousChapter) {
+            Log.d(TAG, "MangaReader: isPreviousChapter true ${urls.size}. sayfaya scroll edildi")
             pagerState.scrollToPage(urls.size)
             isPreviousChapter = false
         }
     }
     LaunchedEffect(Unit) {
+        Log.d(TAG, "MangaReader: initial scroll çalıştı ${pageIndex + 1}. sayfaya scroll edildi")
         pagerState.scrollToPage(pageIndex + 1)
     }
     Box(modifier = modifier) {
@@ -180,3 +182,5 @@ fun PageIndicator(
         }
     }
 }
+
+private const val TAG = "MangaReader"

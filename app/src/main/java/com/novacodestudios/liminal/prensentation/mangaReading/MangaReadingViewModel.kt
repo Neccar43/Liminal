@@ -47,7 +47,7 @@ class MangaReaderViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            getMangaImages(state.currentChapter.url)
+            getMangaImages(state.currentChapter.url, isNextChapter = null)
         }
         viewModelScope.launch {
             getSeriesEntity()
@@ -76,7 +76,7 @@ class MangaReaderViewModel @Inject constructor(
     }
 
 
-    private fun getMangaImages(chapterUrl: String) {
+    private fun getMangaImages(chapterUrl: String,isNextChapter:Boolean?) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.getMangaImageUrls(chapterUrl).collectLatest { resource ->
                 withContext(Dispatchers.Main) {
@@ -93,8 +93,17 @@ class MangaReaderViewModel @Inject constructor(
                         Resource.Loading -> state = state.copy(isLoading = true)
                         is Resource.Success -> {
                             Log.d(TAG, "getMangaImages: ${resource.data}")
-                            state =
-                                state.copy(imageUrls = resource.data, isLoading = false)
+                            if (isNextChapter==null){
+                                state =
+                                    state.copy(imageUrls = resource.data, isLoading = false,)
+                                return@withContext
+                            }
+
+                            if (isNextChapter){
+                                state = state.copy(isLoading = false, imageUrls = resource.data,seriesEntity = state.seriesEntity!!.copy(currentPageIndex = 0))
+                            }else{
+                                state = state.copy(isLoading = false, imageUrls = resource.data,seriesEntity = state.seriesEntity!!.copy(currentPageIndex = resource.data.size-1))
+                            }
                         }
                     }
                 }
@@ -128,7 +137,7 @@ class MangaReaderViewModel @Inject constructor(
         val nextChapter = state.chapters.getNextChapter(state.currentChapter) ?: return
         updateSeriesCurrentChapterAndIndex(nextChapter, 0)
         state = state.copy(currentChapter = nextChapter)
-        getMangaImages(state.currentChapter.url)
+        getMangaImages(state.currentChapter.url, isNextChapter = true)
 
     }
 
@@ -142,7 +151,7 @@ class MangaReaderViewModel @Inject constructor(
     private fun getPreviousChapter() {
         val previousChapter = state.chapters.getPreviousChapter(state.currentChapter) ?: return
         state = state.copy(currentChapter = previousChapter)
-        getMangaImages(state.currentChapter.url)
+        getMangaImages(state.currentChapter.url, isNextChapter = false)
     }
 
     private fun updateSeriesCurrentChapterAndIndex(chapter: Chapter, pageIndex: Int) {
@@ -179,7 +188,7 @@ class MangaReaderViewModel @Inject constructor(
 
 
     companion object {
-        private const val TAG = "MangaReaderViewModel"
+        private const val TAG = "MangaReadingViewModel"
     }
 
     sealed class UIEvent {
