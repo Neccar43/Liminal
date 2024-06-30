@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.novacodestudios.liminal.data.repository.MangaRepository
 import com.novacodestudios.liminal.data.repository.NovelRepository
 import com.novacodestudios.liminal.domain.model.MangaPreview
@@ -16,7 +18,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.cache
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +39,9 @@ class HomeViewModel @Inject constructor(
 
     private val _eventFlow = MutableSharedFlow<UIEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
+
+    private val _tempestPagingData = MutableStateFlow<PagingData<MangaPreview>>(PagingData.empty())
+    val tempestPagingData = _tempestPagingData.asStateFlow()
 
     /*
     Ekrandaki donmalar Dispatcherın IO olmamasından kaynaklanıyormuş
@@ -88,10 +96,9 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
     private fun getMangas() {
         viewModelScope.launch(Dispatchers.IO) {
-            mangaRepo.getMangas().collectLatest { resource ->
+            mangaRepo.getSadScanMangas().collectLatest { resource ->
                 withContext(Dispatchers.Main) {
                     when (resource) {
                         is Resource.Error -> {
@@ -111,8 +118,21 @@ class HomeViewModel @Inject constructor(
                         }
                     }
                 }
-
             }
+        }
+        getMangasFromTempest()
+
+    }
+
+    private fun getMangasFromTempest(){
+        viewModelScope.launch(Dispatchers.IO) {
+            mangaRepo.getTempestMangas()
+                .cachedIn(this)
+                .collectLatest { pagingData ->
+                    withContext(Dispatchers.Main) {
+                        _tempestPagingData.value = pagingData
+                    }
+                }
         }
     }
 
@@ -124,6 +144,7 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun search() {
         // TODO: Implement search

@@ -1,16 +1,23 @@
 package com.novacodestudios.liminal.prensentation.home
 
-import android.content.res.Configuration
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -20,17 +27,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.novacodestudios.liminal.domain.model.MangaPreview
-import com.novacodestudios.liminal.domain.model.NovelPreview
 import com.novacodestudios.liminal.domain.model.SeriesPreview
 import com.novacodestudios.liminal.prensentation.component.LiminalProgressIndicator
 import com.novacodestudios.liminal.prensentation.component.LiminalSearchBar
 import com.novacodestudios.liminal.prensentation.home.component.HomeTopBar
 import com.novacodestudios.liminal.prensentation.home.component.SeriesGridList
 import com.novacodestudios.liminal.prensentation.home.component.SeriesListItem
-import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.ui.tooling.preview.Preview as ComposPreview
 
 
 @Composable
@@ -49,8 +56,11 @@ fun HomeScreen(
         }
     }
 
+    val tempestPagingItems = viewModel.tempestPagingData.collectAsLazyPagingItems()
+
     HomeContent(
         snackBarHostState = snackbarHostState,
+        tempestPagingItems = tempestPagingItems,
         state = viewModel.state,
         onEvent = viewModel::onEvent,
         onNavigateDetailScreen = onNavigateDetailScreen
@@ -61,6 +71,7 @@ fun HomeScreen(
 @Composable
 fun HomeContent(
     state: HomeState,
+    tempestPagingItems: LazyPagingItems<MangaPreview>,
     snackBarHostState: SnackbarHostState,
     onEvent: (HomeEvent) -> Unit,
     onNavigateDetailScreen: (SeriesPreview) -> Unit
@@ -103,13 +114,41 @@ fun HomeContent(
                     .padding(horizontal = 8.dp)
             ) {
                 val groupedSeriesList = state.seriesList.groupBy { it.source }
-                items(groupedSeriesList.keys.toList()) { source ->
+                items(groupedSeriesList.keys.toList(), key = { it }) { source ->
                     SeriesGridList(
                         modifier = Modifier.padding(top = 8.dp),
                         source = source,
                         seriesList = groupedSeriesList[source]!!,
                         onClick = { onNavigateDetailScreen(it) }
                     )
+                }
+
+                item {
+                    Column(
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        Text(
+                            text = "Tempest Kaynağından",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                        LazyHorizontalGrid(
+                            modifier = Modifier.height(460.dp),
+                            rows = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(0.dp),
+                        ) {
+                            items(
+                                count = tempestPagingItems.itemCount,
+                                key = tempestPagingItems.itemKey { it.detailPageUrl }
+                            ) { index ->
+                                val series=tempestPagingItems[index]!!
+                                SeriesListItem(
+                                    series = series,
+                                    onClick = { onNavigateDetailScreen(series) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -119,7 +158,7 @@ fun HomeContent(
 }
 
 
-@ComposPreview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+/*@ComposPreview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Preview() {
     LiminalTheme {
@@ -265,8 +304,9 @@ private fun Preview() {
         ), onEvent = {}, onNavigateDetailScreen = {
 
         },
-            snackBarHostState = SnackbarHostState()
+            snackBarHostState = SnackbarHostState(),
+            tempestPagingItems =
         )
 
     }
-}
+}*/

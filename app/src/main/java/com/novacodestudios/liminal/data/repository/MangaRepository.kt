@@ -1,9 +1,14 @@
 package com.novacodestudios.liminal.data.repository
 
 import android.util.Log
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.novacodestudios.liminal.data.remote.MangaScraper
 import com.novacodestudios.liminal.data.remote.SadScansScrapper
 import com.novacodestudios.liminal.data.remote.TempestScrapper
+import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
+import com.novacodestudios.liminal.data.remote.pagingSource.TempestPagingSource
 import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.mapper.toMangaDetail
 import com.novacodestudios.liminal.domain.mapper.toMangaPreviewList
@@ -12,8 +17,6 @@ import com.novacodestudios.liminal.domain.model.MangaDetail
 import com.novacodestudios.liminal.domain.model.MangaPreview
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -22,21 +25,22 @@ class MangaRepository @Inject constructor(
     private val sadScansScrapper: SadScansScrapper
 ) {
 
-
-    fun getMangas(pageNumber: Int = 1): Flow<Resource<List<MangaPreview>>> =
-        executeWithResource(errorLog = { Log.e(TAG, "getMangas: Error: $it") }) {
-            coroutineScope {
-                val sadScansDeferred = async { sadScansScrapper.getMangaList() }
-                val tempestDeferred = async { tempestScrapper.getMangaList(pageNumber) }
-
-                val sadScansMangas = sadScansDeferred.await()
-                val tempestMangas = tempestDeferred.await()
-
-                val sum = sadScansMangas + tempestMangas
-                sum.toMangaPreviewList()
+    /*
+    tempesette her sayfa başına 50 manga veriyor
+     */
+    fun getTempestMangas(): Flow<PagingData<MangaPreview>> =
+        Pager(
+            config = PagingConfig(pageSize = 50),
+            pagingSourceFactory = {
+                TempestPagingSource(
+                    scraper = tempestScrapper,
+                )
             }
-        }
+            ).flow
 
+    fun getSadScanMangas(): Flow<Resource<List<MangaPreview>>> = executeWithResource {
+        sadScansScrapper.getMangaList().toMangaPreviewList()
+    }
 
     // TODO: Design patern uygula
     fun getMangaDetail(detailPageUrl: String): Flow<Resource<MangaDetail>> = executeWithResource {
