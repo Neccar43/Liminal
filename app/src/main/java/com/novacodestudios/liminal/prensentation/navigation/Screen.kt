@@ -1,4 +1,4 @@
-package com.novacodestudios.liminal.prensentation.screen
+package com.novacodestudios.liminal.prensentation.navigation
 
 import com.novacodestudios.liminal.domain.model.Chapter
 import kotlinx.serialization.Serializable

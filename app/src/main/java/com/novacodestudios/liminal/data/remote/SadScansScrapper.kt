@@ -130,52 +130,6 @@ class SadScansScrapper @Inject constructor(private val context: Context) : Manga
         }
     }
 
-
-    suspend fun getRecentMangaChapters(): List<RecentMangaChaptersDto> {
-        return skrape(HttpFetcher) {
-            request {
-                url = baseUrl
-            }
-
-            response {
-                htmlDocument {
-                    div {
-                        withClass = "chap-content"
-
-                        findAll {
-                            map { docElement ->
-                                RecentMangaChaptersDto(
-                                    name = docElement.findFirst { attribute("title") },
-                                    imageUrl = "", // TODO: Resimleri çek
-                                    chapters = docElement.div {
-                                        withClass = "chap-nav"
-                                        findFirst {
-                                            a {
-                                                withClass = "chap-info"
-                                                findAll {
-                                                    map {
-                                                        ChapterDto(
-                                                            title = it.attribute("title"),
-                                                            releaseDate = it.findFirst("span.chap-date") { text },
-                                                            url = baseUrl + it.attribute(
-                                                                "href"
-                                                            )
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    },
-                                )
-                            }
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-
     companion object {
         private const val TAG = "SadScansScrapper"
     }

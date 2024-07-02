@@ -25,21 +25,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.novacodestudios.liminal.domain.model.Chapter
+import com.novacodestudios.liminal.prensentation.component.BottomBar
 import com.novacodestudios.liminal.prensentation.detail.DetailScreen
-import com.novacodestudios.liminal.prensentation.home.HomeScreen
-import com.novacodestudios.liminal.prensentation.library.LibraryScreen
 import com.novacodestudios.liminal.prensentation.mangaReading.MangaReadingScreen
+import com.novacodestudios.liminal.prensentation.navigation.BottomNavigationItem
+import com.novacodestudios.liminal.prensentation.navigation.Graph
 import com.novacodestudios.liminal.prensentation.novelReading.NovelReadingScreen
-import com.novacodestudios.liminal.prensentation.screen.Screen
+import com.novacodestudios.liminal.prensentation.navigation.Screen
+import com.novacodestudios.liminal.prensentation.navigation.mainGraph
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import com.novacodestudios.liminal.util.encodeUrl
 import com.novacodestudios.liminal.util.parcelableListType
@@ -53,20 +52,6 @@ import kotlin.reflect.typeOf
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val items = listOf(
-            BottomNavigationItem(
-                title = "Ana Sayfa",
-                selectedIcon = Icons.Filled.Home,
-                unSelectedIcon = Icons.Outlined.Home,
-                route = Screen.Home
-            ),
-            BottomNavigationItem(
-                title = "Kütüphane",
-                selectedIcon = Icons.Filled.CollectionsBookmark,
-                unSelectedIcon = Icons.Outlined.CollectionsBookmark,
-                route = Screen.Library
-            ),
-        )
         setContent {
             LiminalTheme {
                 val navController = rememberNavController()
@@ -79,12 +64,12 @@ class MainActivity : ComponentActivity() {
                         bottomBar = {
                             /* val currentRoute = navBackStackEntry?.destination?.route
                              val shouldDisplayBottomBar = when (currentRoute) {
-                                 "com.novacodestudios.liminal.prensentation.screen.Screen.Home",
-                                 "com.novacodestudios.liminal.prensentation.screen.Screen.Library" -> true
+                                 "com.novacodestudios.liminal.prensentation.navigation.Screen.Home",
+                                 "com.novacodestudios.liminal.prensentation.navigation.Screen.Library" -> true
                                  else -> false
                              }*/
 
-                            BottomBar(navController = navController, navItems = items)
+                            BottomBar(navController = navController)
 
 
                         }
@@ -153,92 +138,5 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-    }
-}
-
-@Composable
-fun BottomBar(navItems: List<BottomNavigationItem>, navController: NavHostController) {
-    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
-    NavigationBar {
-        navItems.forEachIndexed { index, item ->
-            NavigationBarItem(
-                label = { Text(text = item.title) },
-                alwaysShowLabel = false,
-                selected = selectedItemIndex == index,
-                onClick = {
-                    selectedItemIndex = index
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                icon = {
-                    Icon(
-                        imageVector = if (selectedItemIndex == index) {
-                            item.selectedIcon
-                        } else {
-                            item.unSelectedIcon
-                        },
-                        contentDescription = item.title
-                    )
-                })
-        }
-    }
-}
-
-
-data class BottomNavigationItem(
-    val title: String,
-    val selectedIcon: ImageVector,
-    val unSelectedIcon: ImageVector,
-    val route: Screen
-)
-
-
-@Serializable
-sealed class Graph {
-    @Serializable
-    data object Main : Graph()
-
-    @Serializable
-    data object Root : Graph()
-}
-
-fun NavGraphBuilder.mainGraph(navController: NavController) {
-    navigation<Graph.Main>(startDestination = Screen.Home) {
-        composable<Screen.Home> {
-            HomeScreen(onNavigateDetailScreen = { preview ->
-                navController.navigate(
-                    Screen.Detail(
-                        preview.detailPageUrl,
-                        preview.type.name
-                    )
-                )
-            })
-        }
-
-        composable<Screen.Library> {
-            LibraryScreen(
-                onNavigateMangaReadingScreen = { chapter, chapters ->
-                    navController.navigate(
-                        Screen.MangaReading(
-                            currentChapter = chapter.withEncodedUrl(),
-                            chapters = chapters.map { it.withEncodedUrl() },
-                        )
-                    )
-                },
-                onNavigateNovelReadingScreen = { chapter, detailUrl ->
-                    navController.navigate(
-                        Screen.NovelReading(
-                            detailPageUrl = detailUrl.encodeUrl(),
-                            currentChapter = chapter.withEncodedUrl(),
-                        )
-                    )
-                }
-            )
-        }
     }
 }

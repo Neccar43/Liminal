@@ -13,7 +13,7 @@ import com.novacodestudios.liminal.data.repository.ChapterRepository
 import com.novacodestudios.liminal.data.repository.MangaRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
 import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.prensentation.screen.Screen
+import com.novacodestudios.liminal.prensentation.navigation.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter

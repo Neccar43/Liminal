@@ -130,7 +130,7 @@ fun HomeContent(
                             modifier = Modifier.padding(vertical = 8.dp)
                         )
                         LazyHorizontalGrid(
-                            modifier = Modifier.height(460.dp),
+                            modifier = Modifier.height(465.dp),
                             rows = GridCells.Fixed(2),
                             horizontalArrangement = Arrangement.spacedBy(0.dp),
                         ) {

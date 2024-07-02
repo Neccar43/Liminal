@@ -18,7 +18,7 @@ import com.novacodestudios.liminal.domain.model.SeriesDetail
 import com.novacodestudios.liminal.domain.model.SeriesType
 import com.novacodestudios.liminal.domain.model.toSeriesEntity
 import com.novacodestudios.liminal.domain.model.toType
-import com.novacodestudios.liminal.prensentation.screen.Screen
+import com.novacodestudios.liminal.prensentation.navigation.Screen
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.hashToMD5
 import dagger.hilt.android.lifecycle.HiltViewModel
