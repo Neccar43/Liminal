@@ -13,6 +13,7 @@ open class SeriesDetail(
     open val chapters: List<Chapter>,
     open val type: SeriesType,
 ) {
+    // TODO: Rename
     fun copy2(
         name: String = this.name,
         imageUrl: String = this.imageUrl,

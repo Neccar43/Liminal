@@ -4,74 +4,52 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CollectionsBookmark
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.outlined.CollectionsBookmark
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.prensentation.component.BottomBar
 import com.novacodestudios.liminal.prensentation.detail.DetailScreen
 import com.novacodestudios.liminal.prensentation.mangaReading.MangaReadingScreen
-import com.novacodestudios.liminal.prensentation.navigation.BottomNavigationItem
 import com.novacodestudios.liminal.prensentation.navigation.Graph
-import com.novacodestudios.liminal.prensentation.novelReading.NovelReadingScreen
 import com.novacodestudios.liminal.prensentation.navigation.Screen
 import com.novacodestudios.liminal.prensentation.navigation.mainGraph
+import com.novacodestudios.liminal.prensentation.novelReading.NovelReadingScreen
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import com.novacodestudios.liminal.util.encodeUrl
 import com.novacodestudios.liminal.util.parcelableListType
 import com.novacodestudios.liminal.util.parcelableType
 import com.novacodestudios.liminal.util.withEncodedUrl
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.serialization.Serializable
 import kotlin.reflect.typeOf
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             LiminalTheme {
                 val navController = rememberNavController()
-                //val navBackStackEntry by navController.currentBackStackEntryAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     Scaffold(
                         bottomBar = {
-                            /* val currentRoute = navBackStackEntry?.destination?.route
-                             val shouldDisplayBottomBar = when (currentRoute) {
-                                 "com.novacodestudios.liminal.prensentation.navigation.Screen.Home",
-                                 "com.novacodestudios.liminal.prensentation.navigation.Screen.Library" -> true
-                                 else -> false
-                             }*/
+                            /*val navBackStackEntry by navController.currentBackStackEntryAsState()
+                            val currentRoute = navBackStackEntry?.destination*/
 
                             BottomBar(navController = navController)
-
-
                         }
                     ) { paddingValues ->
                         NavHost(

@@ -15,21 +15,19 @@ import it.skrape.core.htmlDocument
 import it.skrape.fetcher.HttpFetcher
 import it.skrape.fetcher.response
 import it.skrape.fetcher.skrape
-import it.skrape.selects.DocElement
 import it.skrape.selects.html5.a
 import it.skrape.selects.html5.div
 import it.skrape.selects.html5.h1
 import it.skrape.selects.html5.h3
 import it.skrape.selects.html5.img
-import it.skrape.selects.html5.p
 import it.skrape.selects.html5.span
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.OkHttpClient
-import kotlin.coroutines.resume
 import okhttp3.Request
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import kotlin.coroutines.resume
 
 // TODO: diğer scraper lar için linkler https://novelaozora.com/manga/issizin-reenkarnasyonu/
 

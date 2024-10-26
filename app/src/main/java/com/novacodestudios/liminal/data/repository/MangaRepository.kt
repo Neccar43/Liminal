@@ -7,7 +7,6 @@ import androidx.paging.PagingData
 import com.novacodestudios.liminal.data.remote.MangaScraper
 import com.novacodestudios.liminal.data.remote.SadScansScrapper
 import com.novacodestudios.liminal.data.remote.TempestScrapper
-import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
 import com.novacodestudios.liminal.data.remote.pagingSource.TempestPagingSource
 import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.mapper.toMangaDetail
@@ -48,7 +47,7 @@ class MangaRepository @Inject constructor(
             detailPageUrl.contains("sadscans") ->
                 getMangaDetailByScrapper(sadScansScrapper, detailPageUrl)
 
-            detailPageUrl.contains("tempestfansub") -> getMangaDetailByScrapper(
+            detailPageUrl.contains("tempestscans") -> getMangaDetailByScrapper(
                 tempestScrapper,
                 detailPageUrl
             )
@@ -65,7 +64,7 @@ class MangaRepository @Inject constructor(
                 detailPageUrl.contains("sadscans") ->
                     sadScansScrapper.getMangaChapterList(detailPageUrl).map { it.toChapter() }
 
-                detailPageUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterList(
+                detailPageUrl.contains("tempestscans") -> tempestScrapper.getMangaChapterList(
                     detailPageUrl
                 ).map { it.toChapter() }
 
@@ -93,7 +92,7 @@ class MangaRepository @Inject constructor(
         }) {
             when {
                 chapterUrl.contains("sadscans") -> sadScansScrapper.getMangaChapterImages(chapterUrl)
-                chapterUrl.contains("tempestfansub") -> tempestScrapper.getMangaChapterImages(
+                chapterUrl.contains("tempestscans") -> tempestScrapper.getMangaChapterImages(
                     chapterUrl
                 )
 

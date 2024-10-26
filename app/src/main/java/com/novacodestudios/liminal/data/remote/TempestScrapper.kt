@@ -28,7 +28,7 @@ import kotlin.coroutines.resume
 
 class TempestScrapper(private val context: Context) : MangaScraper {
     override val baseUrl: String
-        get() = "https://tempestfansub.com/"
+        get() = "https://tempestscans.net/"
 
     override suspend fun getMangaList(pageNumber: Int): List<MangaPreviewDto> {
         return skrape(HttpFetcher) {

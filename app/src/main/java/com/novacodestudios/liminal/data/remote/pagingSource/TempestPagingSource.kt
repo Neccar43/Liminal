@@ -3,10 +3,8 @@ package com.novacodestudios.liminal.data.remote.pagingSource
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.novacodestudios.liminal.data.remote.TempestScrapper
-import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
 import com.novacodestudios.liminal.domain.mapper.toMangaPreviewList
 import com.novacodestudios.liminal.domain.model.MangaPreview
-import javax.inject.Inject
 
 class TempestPagingSource(
     private val scraper:TempestScrapper,

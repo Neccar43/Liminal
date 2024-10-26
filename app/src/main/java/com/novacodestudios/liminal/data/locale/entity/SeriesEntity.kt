@@ -13,5 +13,6 @@ data class SeriesEntity(
     val currentChapterId: String,
     val currentChapterName: String? = null,
     val currentPageIndex: Int,
-    val isManga: Boolean
+    val isManga: Boolean,
+    val downloadedContentPath: String? = null
 )

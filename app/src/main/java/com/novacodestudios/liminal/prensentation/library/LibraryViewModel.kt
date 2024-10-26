@@ -71,7 +71,7 @@ class LibraryViewModel @Inject constructor(
 
     // TODO: Implement downloadSeries
     private fun downloadSeries(seriesEntity: SeriesEntity) {
-
+        
     }
 
     private fun resetSeries(series: SeriesEntity) {

@@ -1,9 +1,5 @@
 package com.novacodestudios.liminal.data.remote
 
-import com.novacodestudios.liminal.data.remote.dto.ChapterDto
-import com.novacodestudios.liminal.data.remote.dto.NovelDetailDto
-import com.novacodestudios.liminal.data.remote.dto.NovelPreviewDto
-
 class NovelAozoraScraper {
 
     /*suspend fun getNovelList(page:Int):List<NovelPreviewDto>{

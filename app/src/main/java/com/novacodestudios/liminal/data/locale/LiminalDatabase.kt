@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 import com.novacodestudios.liminal.data.locale.entity.ChapterEntity
 import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
 
-@Database(entities = [SeriesEntity::class, ChapterEntity::class], version = 3)
+@Database(entities = [SeriesEntity::class, ChapterEntity::class], version = 4)
 abstract class LiminalDatabase : RoomDatabase() {
     abstract fun seriesDao(): SeriesDao
     abstract fun chapterDao(): ChapterDao

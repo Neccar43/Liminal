@@ -1,9 +1,12 @@
 package com.novacodestudios.liminal.util
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 sealed class Resource<out T> {
     data class Success<out T>(val data: T) : Resource<T>()
@@ -51,4 +54,17 @@ fun <T> executeWithResourceFlow(block: suspend () -> Flow<T>): Flow<Resource<T>>
     } catch (e: Exception) {
         send(Resource.Error(e))
     }
+}
+
+fun <T> Flow<T>.asResource(): Flow<Resource<T>> {
+    return this
+        .map { value ->
+            Resource.success(value)
+        }
+        .onStart {
+            emit(Resource.loading())
+        }
+        .catch { e ->
+            emit(Resource.error(Exception(e)))
+        }
 }

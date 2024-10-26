@@ -20,4 +20,5 @@ data class ChapterEntity(
     val pageIndex: Int,
     val seriesId: String,
     val releaseDate: String,
+    val downloadChapterPath:String?=null
 )

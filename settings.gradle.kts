@@ -10,6 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
+        maven("https://jitpack.io") {
+            name = "JitPack" // Optional: Give the repository a descriptive name
+        }
     }
 }
 

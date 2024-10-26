@@ -4,7 +4,6 @@ import android.content.Context
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.MangaDetailDto
 import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
-import com.novacodestudios.liminal.data.remote.dto.RecentMangaChaptersDto
 import it.skrape.core.document
 import it.skrape.core.htmlDocument
 import it.skrape.fetcher.HttpFetcher
