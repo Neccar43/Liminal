@@ -6,10 +6,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,13 +60,17 @@ fun MangaReadingContent(
             Box {
                 MangaReadingTopBar(
                     mangaName = state.seriesEntity?.name ?: "",
-                    chapterName = state.currentChapter.title,
+                    chapterName = state.currentChapter!!.title,
                     onNavigateUp = onNavigateUp,
                     onClickReadModeBIcon = { isSheetVisible = true }
                 )
             }
         }
-    }) { paddingValues ->
+    },
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets
+            .exclude(NavigationBarDefaults.windowInsets),
+
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -71,8 +78,8 @@ fun MangaReadingContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            LaunchedEffect(state.imageUrls) {
-                Log.d(TAG, "MangaReadingContent: urls: ${state.imageUrls}")
+            LaunchedEffect(state.imageSources) {
+                Log.d(TAG, "MangaReadingContent: urls: ${state.imageSources}")
             }
             if (!state.isLoading) {
                 when (state.readingMode) {
@@ -80,7 +87,7 @@ fun MangaReadingContent(
                         WebtoonReader(
                             modifier = Modifier
                                 .fillMaxSize(),
-                            urls = state.imageUrls,
+                            urls = state.imageSources,
                             onLoadNextChapter = {
                                 Log.d(TAG, "WebtoonReader: sonraki sayfa yüklenecek")
                                 onEvent(MangaEvent.OnNextChapter)
@@ -97,7 +104,7 @@ fun MangaReadingContent(
                         MangaReader(
                             modifier = Modifier
                                 .fillMaxSize(),
-                            urls = state.imageUrls,
+                            urls = state.imageSources,
                             pageIndex = state.seriesEntity?.currentPageIndex ?: 0,
                             onLoadNextChapter = {
                                 Log.d(TAG, "onLoadNextChapter: Çalıştı")
@@ -120,7 +127,7 @@ fun MangaReadingContent(
                         MangaReader(
                             modifier = Modifier
                                 .fillMaxSize(),
-                            urls = state.imageUrls.reversed(), // TODO: parametre olarak read mode al ve inducatörün yönünğde değştir buradaki when i kaldır
+                            urls = state.imageSources.reversed(), // TODO: parametre olarak read mode al ve inducatörün yönünğde değştir buradaki when i kaldır
                             pageIndex = state.seriesEntity?.currentPageIndex ?: 0,
                             onLoadNextChapter = {
                                 Log.d(TAG, "onLoadNextChapter: Çalıştı")

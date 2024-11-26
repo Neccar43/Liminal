@@ -11,17 +11,15 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.novacodestudios.liminal.prensentation.navigation.BottomNavigationItem
 import com.novacodestudios.liminal.prensentation.navigation.Screen
 
 @Composable
 fun BottomBar(navController: NavHostController) {
-    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
     val navItems=listOf(
         BottomNavigationItem(
             title = "Ana Sayfa",
@@ -36,14 +34,17 @@ fun BottomBar(navController: NavHostController) {
             route = Screen.Library
         ),
     )
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
     NavigationBar {
-        navItems.forEachIndexed { index, item ->
+        navItems.forEach { item ->
+            val isSelected=currentDestination?.hasRoute(item.route::class)==true
+
             NavigationBarItem(
                 label = { Text(text = item.title) },
                 alwaysShowLabel = false,
-                selected = selectedItemIndex == index,
+                selected = isSelected,
                 onClick = {
-                    selectedItemIndex = index
                     navController.navigate(item.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
@@ -54,7 +55,7 @@ fun BottomBar(navController: NavHostController) {
                 },
                 icon = {
                     Icon(
-                        imageVector = if (selectedItemIndex == index) {
+                        imageVector = if (isSelected) {
                             item.selectedIcon
                         } else {
                             item.unSelectedIcon

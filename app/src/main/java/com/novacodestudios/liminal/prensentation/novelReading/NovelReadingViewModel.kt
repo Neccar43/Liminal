@@ -15,6 +15,7 @@ import com.novacodestudios.liminal.data.repository.SeriesRepository
 import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.prensentation.navigation.Screen
+import com.novacodestudios.liminal.prensentation.navigation.toChapter
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter
@@ -36,7 +37,7 @@ class NovelReadingViewModel @Inject constructor(
     ViewModel() {
     var state by mutableStateOf(
         NovelReadingState(
-            currentChapter = savedStateHandle.toRoute<Screen.NovelReading>().currentChapter,
+            currentChapter = savedStateHandle.toRoute<Screen.NovelReading>().currentChapter.toChapter(),
             detailPageUrl = savedStateHandle.toRoute<Screen.NovelReading>().detailPageUrl
         )
     )
@@ -49,7 +50,7 @@ class NovelReadingViewModel @Inject constructor(
         }
     }
 
-    private fun getSeriesEntity() {
+  /*  private fun getSeriesEntity() {
         viewModelScope.launch(Dispatchers.IO) {
             val chapterId = state.currentChapter.url.hashToMD5()
             seriesRepository.getSeriesByChapterId(chapterId).collectLatest { resource ->
@@ -68,6 +69,18 @@ class NovelReadingViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }*/
+
+    private fun getSeriesEntity() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val chapterId = state.currentChapter.url.hashToMD5()
+            val seriesEntity=seriesRepository.getSeriesByChapterId(chapterId)
+            state = state.copy(seriesEntity = seriesEntity)
+            if (state.seriesEntity!=null){
+                getChapterList()
+            }
+
         }
     }
 

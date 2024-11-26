@@ -42,7 +42,7 @@ import kotlin.math.roundToInt
 @Composable
 fun MangaReader(
     modifier: Modifier = Modifier,
-    urls: List<String>,
+    urls: List<Any>,
     pageIndex: Int,
     onLoadNextChapter: () -> Unit,
     onLoadPreviousChapter: () -> Unit,
@@ -52,7 +52,7 @@ fun MangaReader(
 ) {
     if (urls.isEmpty()) return
 
-    var newUrls by remember { mutableStateOf(listOf<String>()) }
+    var newUrls by remember { mutableStateOf(listOf<Any>()) }
     var isNextChapter by remember {
         mutableStateOf(false)
     }

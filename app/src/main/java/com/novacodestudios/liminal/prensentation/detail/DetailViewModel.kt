@@ -115,13 +115,15 @@ class DetailViewModel @Inject constructor(
     private fun getChapterList() {
         when (state.type) {
             SeriesType.MANGA -> getMangaChapterList()
-            SeriesType.NOVEL -> getNovelChapterList()
+            SeriesType.NOVEL -> {
+                getNovelChapterList()
+            }
         }
     }
 
     private fun getMangaChapterList() {
         viewModelScope.launch(Dispatchers.IO) {
-            mangaRepo.getMangaChapterList(state.detailPageUrl).collectLatest { resource ->
+            mangaRepo.getMangaChapterList(state.detailPageUrl).collectLatest { resource -> // TODO: handle resource fonksiyonu ekle
                 withContext(Dispatchers.Main) {
                     when (resource) {
                         is Resource.Error -> {

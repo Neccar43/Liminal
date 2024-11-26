@@ -5,6 +5,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -33,13 +34,23 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-           // signingConfig = null // TODO: Burayı düzelt
         }
+
+        /*debug {
+            isDebuggable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }*/
 
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+
     }
     kotlinOptions {
         jvmTarget = "1.8"
@@ -90,7 +101,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifeCycleVersion")
 
     implementation("androidx.navigation:navigation-compose:2.8.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     val coroutinesVersion = "1.8.1"
 // Coroutines
@@ -106,7 +117,7 @@ dependencies {
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
 
     //skrapeit (web scraping)
-    implementation("it.skrape:skrapeit:1.2.2")
+    //implementation("it.skrape:skrapeit:1.2.2")
 
     //Coil compose
     implementation("io.coil-kt:coil-compose:2.6.0")
@@ -140,6 +151,13 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jsoup:jsoup:1.17.2")
 
-    implementation("com.github.khushpanchal:Ketch:1.0.0")
+   // implementation("com.github.khushpanchal:Ketch:2.0.2")
+
+    //workmanager
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    val work_version = "2.9.1"
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+    //work manager hilt
+    implementation("androidx.work:work-runtime-ktx:$work_version")
 
 }

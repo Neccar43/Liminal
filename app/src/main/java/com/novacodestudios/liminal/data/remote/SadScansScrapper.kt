@@ -4,128 +4,62 @@ import android.content.Context
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.MangaDetailDto
 import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
-import it.skrape.core.document
-import it.skrape.core.htmlDocument
-import it.skrape.fetcher.HttpFetcher
-import it.skrape.fetcher.response
-import it.skrape.fetcher.skrape
-import it.skrape.selects.eachSrc
-import it.skrape.selects.html5.a
-import it.skrape.selects.html5.div
-import it.skrape.selects.html5.h2
-import it.skrape.selects.html5.img
-import it.skrape.selects.html5.p
-import it.skrape.selects.html5.span
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
 import javax.inject.Inject
 
 class SadScansScrapper @Inject constructor(private val context: Context) : MangaScraper {
     override val baseUrl: String
         get() = "https://sadscans.com/"
 
-    override suspend fun getMangaDetail(detailPageUrl: String): MangaDetailDto {
-        return skrape(HttpFetcher) {
-            request {
-                url = detailPageUrl
-            }
 
-            response {
-                MangaDetailDto(
-                    name = document.div {
-                        withClass = "title"
-                        h2 { findFirst { text } }
-                    },
-                    imageUrl = baseUrl + document.div {
-                        withClass = "series-image"
-                        img { findFirst { attribute("src") } }
-                    },
-                    summary = document.div {
-                        withClass = "summary"
-                        p { findFirst { text } }
-                    },
-                    author = document.div {
-                        withClass = "author"
-                        span { findSecond { text } }
-                    },
-                    chapters = emptyList(),
-                )
-            }
-        }
+    override suspend fun getMangaDetail(detailPageUrl: String): MangaDetailDto {
+        val document:Document = Jsoup.connect(detailPageUrl).get()
+
+        return MangaDetailDto(
+            name = document.selectFirst("div.title h2")?.text()
+                ?: "",
+            imageUrl = (baseUrl + document.selectFirst("div.series-image img")?.attr("src")),
+            summary = document.selectFirst("div.summary p")?.text()
+                ?: "",  // "summary" sınıfındaki div içindeki p etiketindeki metni al
+            author = document.select("div.author span").getOrNull(1)?.text()
+                ?: "",
+            chapters = emptyList()
+        )
     }
 
     override suspend fun getMangaChapterImages(chapterUrl: String): List<String> {
-        return skrape(HttpFetcher) {
-            request {
-                url = chapterUrl
-            }
+        val document: Document = Jsoup.connect(chapterUrl).get()
 
-            response {
-                htmlDocument {
-                    img {
-                        findAll {
-                            eachSrc.filter { it.startsWith("htt") }
-                        }
-                    }
-                }
-
-            }
+        return document.select("img").mapNotNull { element ->
+            val src = element.attr("src")
+            if (src.startsWith("htt")) src else null
         }
     }
 
     override suspend fun getMangaList(pageNumber: Int): List<MangaPreviewDto> {
-        return skrape(HttpFetcher) {
-            request {
-                url = baseUrl + "series"
-            }
+        val url = baseUrl + "series"
+        val document = Jsoup.connect(url).get()
 
-            response {
-                htmlDocument {
-                    div {
-                        withClass = "series-list"
-                        findAll {
-                            map {
-                                MangaPreviewDto(
-                                    name = it.h2 { findFirst { text } },
-                                    imageUrl = baseUrl + it.img { findFirst { attribute("data-src") } },
-                                    detailPageUrl = baseUrl + it.a {
-                                        withClass = "button"
-                                        findFirst { eachHref.first() }
-                                    },
-                                    source = "sadscans"
-                                )
-                            }
-                        }
-                    }
-
-
-                }
-
-            }
+        return document.select("div.series-list").map { element ->
+            MangaPreviewDto(
+                name = element.select("h2").text(),
+                imageUrl = baseUrl + element.select("img").attr("data-src"),
+                detailPageUrl = baseUrl + element.select("a.button").attr("href"),
+                source = "sadscans"
+            )
         }
     }
 
     override suspend fun getMangaChapterList(detailPageUrl: String): List<ChapterDto> {
-        return skrape(HttpFetcher) {
-            request {
-                url = detailPageUrl
-            }
-            response {
-                document.div {
-                    withClass = "chap"
-                    div {
-                        withClass = "link"
-                        findAll {
-                            map {
-                                ChapterDto(
-                                    title = it.a { findFirst { text } },
-                                    url = baseUrl + it.a { findFirst { eachHref.first() } },
-                                    releaseDate = "-"
-                                )
-                            }
-                        }
-                    }
+        val document: Document = Jsoup.connect(detailPageUrl).get()
 
-                }
-            }
+        return document.select("div.chap div.link").map { element ->
+            ChapterDto(
+                title = element.selectFirst("a")?.text() ?: "",
+                url = baseUrl + (element.selectFirst("a")?.attr("href") ?: ""),
+                releaseDate = "-"
+            )
         }
     }
 

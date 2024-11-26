@@ -42,11 +42,9 @@ class HomeViewModel @Inject constructor(
     private val _tempestPagingData = MutableStateFlow<PagingData<MangaPreview>>(PagingData.empty())
     val tempestPagingData = _tempestPagingData.asStateFlow()
 
-    /*
-    Ekrandaki donmalar Dispatcherın IO olmamasından kaynaklanıyormuş
-    tek başına viewmodelscope yeterli değilmiş
-    ama sonrasında Maine bağlamak gerekiyormuş
-     */
+
+    // TODO: dispatcher ayarlamalarını repositorylerde yap
+
     init {
         viewModelScope.launch {
             getContents()
@@ -103,6 +101,11 @@ class HomeViewModel @Inject constructor(
                         is Resource.Error -> {
                             state = state.copy(isLoading = false)
                             Log.e(TAG, "getMangas: Hata: ${resource.exception}")
+                            Log.e(
+                                TAG,
+                                "getMangas: sad scans mangaları çekerken hata yaşandı",
+                                resource.exception.cause
+                            )
                             _eventFlow.emit(
                                 UIEvent.ShowToast(
                                     resource.exception.localizedMessage ?: "An error occurred"

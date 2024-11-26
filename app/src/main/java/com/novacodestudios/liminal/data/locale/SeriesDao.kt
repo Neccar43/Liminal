@@ -24,9 +24,15 @@ interface SeriesDao {
     @Query("SELECT * FROM SeriesEntity WHERE id = :id")
     fun getSeriesById(id: String): Flow<SeriesEntity>
 
+    @Query("SELECT * FROM SeriesEntity WHERE id = :id")
+    fun getSeriesByIdNew(id: String): SeriesEntity
+
     @Query("SELECT * FROM SeriesEntity")
     fun getAllSeries(): Flow<List<SeriesEntity>>
 
+    /*@Query("SELECT * FROM SeriesEntity WHERE id=(SELECT seriesId FROM ChapterEntity WHERE id=:chapterId)")
+    fun getSeriesEntityByChapterId(chapterId: String): Flow<SeriesEntity>*/
+
     @Query("SELECT * FROM SeriesEntity WHERE id=(SELECT seriesId FROM ChapterEntity WHERE id=:chapterId)")
-    fun getSeriesEntityByChapterId(chapterId: String): Flow<SeriesEntity>
+    fun getSeriesEntityByChapterId(chapterId: String): SeriesEntity
 }

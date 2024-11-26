@@ -3,13 +3,16 @@ package com.novacodestudios.liminal.prensentation.library
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -71,7 +74,9 @@ fun LibraryScreenContent(
 ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {}
+        topBar = {},
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets
+            .exclude(NavigationBarDefaults.windowInsets)
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -86,7 +91,7 @@ fun LibraryScreenContent(
                         onReset = {
                             Log.d(TAG, "onReset çalıştı")
                             onEvent(LibraryEvent.OnResetSeries(it)) },
-                        onDownload = {}, // TODO: İndirme özelliğini ekle
+                        onDownload = {onEvent(LibraryEvent.OnDownloadSeries(it))},
                         onClick = {
                             Log.d(TAG, "onClick çalıştı")
                             onEvent(LibraryEvent.OnSeriesItemClicked(seriesEntity))

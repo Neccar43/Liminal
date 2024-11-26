@@ -10,17 +10,6 @@ import android.webkit.WebViewClient
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.NovelDetailDto
 import com.novacodestudios.liminal.data.remote.dto.NovelPreviewDto
-import it.skrape.core.document
-import it.skrape.core.htmlDocument
-import it.skrape.fetcher.HttpFetcher
-import it.skrape.fetcher.response
-import it.skrape.fetcher.skrape
-import it.skrape.selects.html5.a
-import it.skrape.selects.html5.div
-import it.skrape.selects.html5.h1
-import it.skrape.selects.html5.h3
-import it.skrape.selects.html5.img
-import it.skrape.selects.html5.span
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,82 +24,39 @@ import kotlin.coroutines.resume
 
 class TurkceLightNovelScrapper(private val context: Context) {
 
+    // TODO: bu fonksiyon haricnde diğerlerinde sıkıntı var bunu düzelt
     suspend fun getNovelList(): List<NovelPreviewDto> {
-        return skrape(HttpFetcher) {
-            request {
-                url = "https://turkcelightnovels.com"
-                timeout=60_000
-            }
-            response {
-                htmlDocument {
-                    div {
-                        withClass = "page-item-detail"
-                        findAll {
-                            map {
-                                NovelPreviewDto(
-                                    name = it.h3 {
-                                        withClass = "h5"
-                                        findFirst { text }
-                                    },
-                                    imageUrl = it.img { findFirst { attribute("data-src") } },
+        val document: Document = Jsoup.connect("https://turkcelightnovels.com")
+            //.timeout(60_000)  // Timeout ayarını belirt
+            .get()
 
-                                    detailPageUrl = it.h3 {
-                                        withClass = "h5"
-                                        a {
-                                            findFirst {
-                                                eachHref.first()
-                                            }
-                                        }
-
-                                    },
-                                    source = "turkcelightnovels"
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+        return document.select("div.page-item-detail").map { element ->
+            NovelPreviewDto(
+                name = element.selectFirst("h3.h5")?.text() ?: "",
+                imageUrl = element.selectFirst("img")?.attr("data-src") ?: "",
+                detailPageUrl = element.selectFirst("h3.h5 a")?.attr("href")
+                    ?.let { "https://turkcelightnovels.com$it" } ?: "",
+                source = "turkcelightnovels"
+            )
         }
     }
+
 
     suspend fun getNovelDetail(detailPageUrl: String): NovelDetailDto {
-        val detail = skrape(HttpFetcher) {
-            request {
-                url = detailPageUrl
-                timeout=60_000
-            }
-            response {
-                NovelDetailDto(
-                    name = document.div {
-                        withClass = "post-title"
-                        h1 { findFirst { text } }
-                    },
-                    imageUrl = document.div {
-                        withClass = "summary_image"
-                        img { findFirst { attribute("data-src") } }
-                    },
-                    author = document.div {
-                        withClass = "author-content"
-                        a { findFirst { text } }
-                    },
+        val document: Document = Jsoup.connect(detailPageUrl)
+            //.timeout(60_000)  // Timeout ayarını belirt
+            .get()
 
-                    rate = document.span {
-                        withClass = "score"
-                        findFirst { text }
-                    },
-                    summary = document.div {
-                        withClass = "summary__content"
-                        findFirst { text }
-                    },
-                    chapters = emptyList()
-                )
-            }
-        }
-        return detail
-
+        return NovelDetailDto(
+            name = document.selectFirst("div.post-title h1")?.text() ?: "",
+            imageUrl = document.selectFirst("div.summary_image img")?.attr("data-src") ?: "",
+            author = document.selectFirst("div.author-content a")?.text() ?: "",
+            rate = document.selectFirst("span.score")?.text() ?: "",
+            summary = document.selectFirst("div.summary__content")?.text() ?: "",
+            chapters = emptyList()
+        )
     }
 
-    //okhttp çözümü 1296 917 904 1952
     suspend fun getNovelChapterContent(chapterUrl: String): List<String> {
         val client = OkHttpClient()
 

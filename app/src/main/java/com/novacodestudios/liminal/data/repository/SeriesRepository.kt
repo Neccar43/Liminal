@@ -5,7 +5,9 @@ import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
 import com.novacodestudios.liminal.util.executeWithResourceFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SeriesRepository @Inject constructor(
@@ -14,6 +16,10 @@ class SeriesRepository @Inject constructor(
     fun getSeriesById(id: String): Flow<Resource<SeriesEntity>> = executeWithResourceFlow {
         dao.getSeriesById(id)
     }
+    fun getSeriesByIdNew(id: String): SeriesEntity = dao.getSeriesByIdNew(id)
+
+
+
 
     fun getAllSeries(): Flow<Resource<List<SeriesEntity>>> = executeWithResourceFlow {
         dao.getAllSeries()
@@ -31,10 +37,15 @@ class SeriesRepository @Inject constructor(
         dao.deleteSeries(series)
     }
 
-    fun getSeriesByChapterId(chapterId: String): Flow<Resource<SeriesEntity>> =
+   /* fun getSeriesByChapterId(chapterId: String): Flow<Resource<SeriesEntity>> =
         executeWithResourceFlow {
             dao.getSeriesEntityByChapterId(chapterId)
-        }
+        }*/
+
+    suspend fun getSeriesByChapterId(chapterId: String): SeriesEntity = withContext(Dispatchers.IO){
+         dao.getSeriesEntityByChapterId(chapterId)
+    }
+
 
     companion object {
         private const val TAG = "SeriesRepository"

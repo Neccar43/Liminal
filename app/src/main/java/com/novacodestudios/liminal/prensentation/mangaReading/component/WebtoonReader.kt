@@ -13,7 +13,7 @@ import com.novacodestudios.liminal.prensentation.component.ChapterNavigationButt
 @Composable
 fun WebtoonReader(
     modifier: Modifier = Modifier,
-    urls: List<String>,
+    urls: List<Any>,
     onLoadNextChapter: () -> Unit,
     onLoadPreviousChapter: () -> Unit,
 ) {

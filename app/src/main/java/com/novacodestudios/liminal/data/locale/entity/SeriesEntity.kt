@@ -14,5 +14,6 @@ data class SeriesEntity(
     val currentChapterName: String? = null,
     val currentPageIndex: Int,
     val isManga: Boolean,
-    val downloadedContentPath: String? = null
+    //inLibraray
+    val downloadedContentPath: String? = null // seri yolu olacak Manga/Jujutsu kaisen
 )

@@ -2,6 +2,7 @@ package com.novacodestudios.liminal.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.work.WorkManager
 import com.novacodestudios.liminal.data.locale.ChapterDao
 import com.novacodestudios.liminal.data.locale.LiminalDatabase
 import com.novacodestudios.liminal.data.locale.SeriesDao
@@ -80,6 +81,11 @@ object MangaModule {
     @Singleton
     @Provides
     fun provideSeriesRepository(seriesDao: SeriesDao) = SeriesRepository(seriesDao)
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext appContext: Context): WorkManager =
+        WorkManager.getInstance(appContext)
 
 
 }

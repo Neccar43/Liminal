@@ -9,7 +9,8 @@ import com.novacodestudios.liminal.util.hashToMD5
 fun ChapterDto.toChapter() = Chapter(
     title = title,
     releaseDate = releaseDate,
-    url = url
+    url = url,
+    filePath = null
 )
 
 fun Chapter.toChapterDto() = ChapterDto(
@@ -22,11 +23,11 @@ fun Chapter.toChapterEntity(seriesId: String, index: Int) = ChapterEntity(
     id = url.hashToMD5(),
     title = title,
     isRead = false,
-    //releaseDate = releaseDate,
     url = url,
     pageIndex = index,
     seriesId = seriesId,
-    releaseDate = releaseDate
+    releaseDate = releaseDate,
+    downloadChapterPath = filePath
 )
 
 fun List<Chapter>.toChapterEntityList(seriesId: String) = mapIndexed { index, chapter ->
@@ -36,7 +37,8 @@ fun List<Chapter>.toChapterEntityList(seriesId: String) = mapIndexed { index, ch
 fun ChapterEntity.toChapter() = Chapter(
     title = title,
     releaseDate = releaseDate,
-    url = url
+    url = url,
+    filePath = downloadChapterPath
 )
 
 fun List<ChapterEntity>.toChapterList() = map { it.toChapter() }

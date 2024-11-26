@@ -1,12 +1,7 @@
 package com.novacodestudios.liminal.util
 
-import android.os.Build
-import android.os.Bundle
-import android.os.Parcelable
-import androidx.navigation.NavType
+import android.util.Log
 import com.novacodestudios.liminal.domain.model.Chapter
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
@@ -17,7 +12,7 @@ fun String.capitalizeFirstLetter(): String {
     return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
 }
 
-inline fun <reified T : Parcelable> parcelableType(
+/*inline fun <reified T : Parcelable> parcelableType(
     isNullableAllowed: Boolean = false,
     json: Json = Json,
 ) = object : NavType<T>(isNullableAllowed = isNullableAllowed) {
@@ -34,9 +29,9 @@ inline fun <reified T : Parcelable> parcelableType(
     override fun serializeAsValue(value: T): String = json.encodeToString(value)
 
     override fun put(bundle: Bundle, key: String, value: T) = bundle.putParcelable(key, value)
-}
+}*/
 
-inline fun <reified T : Parcelable> parcelableListType(
+/*inline fun <reified T : Parcelable> parcelableListType(
     isNullableAllowed: Boolean = false,
     json: Json = Json,
 ) = object : NavType<List<T>>(isNullableAllowed = isNullableAllowed) {
@@ -54,7 +49,7 @@ inline fun <reified T : Parcelable> parcelableListType(
 
     override fun put(bundle: Bundle, key: String, value: List<T>) =
         bundle.putParcelableArrayList(key, ArrayList(value))
-}
+}*/
 
 
 fun String.encodeUrl(): String = URLEncoder.encode(this, StandardCharsets.UTF_8.toString())
@@ -64,11 +59,14 @@ fun List<Chapter>.getNextChapter(currentChapter: Chapter): Chapter? {
         val i = this.indexOf(currentChapter) + 1
         this[i]
     } catch (e: Exception) {
+        Log.e(TAG, "getNextChapter: sıradaki bölüme geçerken hata aındı", e)
         null
     }
 
 
 }
+
+private const val TAG = "Extension"
 
 fun List<Chapter>.getPreviousChapter(currentChapter: Chapter): Chapter? {
     return try {
@@ -119,5 +117,15 @@ fun formatTimeAgo(timeInMillis: Long): String {
             "$years yıl önce"
         }
     }
+}
+
+fun listToString(list: List<String>): String {
+    val delimiter = "|"
+    return list.joinToString(delimiter)
+}
+
+fun stringToList(string: String): List<String> {
+    val delimiter = "|"
+    return string.split(delimiter).filter { it.isNotEmpty() }
 }
 

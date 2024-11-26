@@ -10,4 +10,5 @@ data class Chapter(
     val title: String,
     val releaseDate: String,
     val url: String,
+    val filePath:String?=null,// TODO: daha iyi isimlendir
 ) : Parcelable

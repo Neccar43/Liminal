@@ -17,6 +17,7 @@ import com.novacodestudios.liminal.domain.model.MangaPreview
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.executeWithResource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class MangaRepository @Inject constructor(
@@ -35,7 +36,7 @@ class MangaRepository @Inject constructor(
                     scraper = tempestScrapper,
                 )
             }
-            ).flow
+        ).flow
 
     fun getSadScanMangas(): Flow<Resource<List<MangaPreview>>> = executeWithResource {
         sadScansScrapper.getMangaList().toMangaPreviewList()
@@ -99,6 +100,19 @@ class MangaRepository @Inject constructor(
                 else -> throw IllegalArgumentException("Unsupported website")
             }
         }
+
+    // TODO: adını değiştir
+    fun getMangaImageUrlsNew(chapterUrl: String): Flow<List<String>> = flow {
+        val scraper: MangaScraper = when {
+            chapterUrl.contains("sadscans") -> sadScansScrapper
+            chapterUrl.contains("tempestscans") -> tempestScrapper
+
+            else -> throw IllegalArgumentException("Unsupported website")
+        }
+
+        val urls = scraper.getMangaChapterImages(chapterUrl)
+        emit(urls)
+    }
 
     companion object {
         private const val TAG = "MangaRepository"
