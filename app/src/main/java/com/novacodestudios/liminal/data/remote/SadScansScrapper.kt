@@ -1,47 +1,48 @@
 package com.novacodestudios.liminal.data.remote
 
-import android.content.Context
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.MangaDetailDto
 import com.novacodestudios.liminal.data.remote.dto.MangaPreviewDto
+import com.novacodestudios.liminal.domain.model.Source
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import javax.inject.Inject
 
-class SadScansScrapper @Inject constructor(private val context: Context) : MangaScraper {
-    override val baseUrl: String
-        get() = "https://sadscans.com/"
+class SadScansScrapper : MangaScraper {
+    override val source: Source
+        get() = Source.SADSCANS
 
+    override suspend fun getMangaDetail(detailPageUrl: String): MangaDetailDto =
+        withContext(Dispatchers.IO) {
+            val document: Document = Jsoup.connect(detailPageUrl).get()
 
-    override suspend fun getMangaDetail(detailPageUrl: String): MangaDetailDto {
-        val document:Document = Jsoup.connect(detailPageUrl).get()
+             MangaDetailDto(
+                name = document.selectFirst("div.title h2")?.text()
+                    ?: "",
+                imageUrl = (baseUrl + document.selectFirst("div.series-image img")?.attr("src")),
+                summary = document.selectFirst("div.summary p")?.text()
+                    ?: "",  // "summary" sınıfındaki div içindeki p etiketindeki metni al
+                author = document.select("div.author span").getOrNull(1)?.text()
+                    ?: "",
+                chapters = emptyList()
+            )
+        }
 
-        return MangaDetailDto(
-            name = document.selectFirst("div.title h2")?.text()
-                ?: "",
-            imageUrl = (baseUrl + document.selectFirst("div.series-image img")?.attr("src")),
-            summary = document.selectFirst("div.summary p")?.text()
-                ?: "",  // "summary" sınıfındaki div içindeki p etiketindeki metni al
-            author = document.select("div.author span").getOrNull(1)?.text()
-                ?: "",
-            chapters = emptyList()
-        )
-    }
-
-    override suspend fun getMangaChapterImages(chapterUrl: String): List<String> {
+    override suspend fun getMangaChapterImages(chapterUrl: String): List<String> = withContext(Dispatchers.IO){
         val document: Document = Jsoup.connect(chapterUrl).get()
 
-        return document.select("img").mapNotNull { element ->
+         document.select("img").mapNotNull { element ->
             val src = element.attr("src")
             if (src.startsWith("htt")) src else null
         }
     }
 
-    override suspend fun getMangaList(pageNumber: Int): List<MangaPreviewDto> {
+    override suspend fun getMangaList(pageNumber: Int): List<MangaPreviewDto> = withContext(Dispatchers.IO){
         val url = baseUrl + "series"
         val document = Jsoup.connect(url).get()
 
-        return document.select("div.series-list").map { element ->
+         document.select("div.series-list").map { element ->
             MangaPreviewDto(
                 name = element.select("h2").text(),
                 imageUrl = baseUrl + element.select("img").attr("data-src"),
@@ -51,10 +52,10 @@ class SadScansScrapper @Inject constructor(private val context: Context) : Manga
         }
     }
 
-    override suspend fun getMangaChapterList(detailPageUrl: String): List<ChapterDto> {
+    override suspend fun getMangaChapterList(detailPageUrl: String): List<ChapterDto> = withContext(Dispatchers.IO){
         val document: Document = Jsoup.connect(detailPageUrl).get()
 
-        return document.select("div.chap div.link").map { element ->
+         document.select("div.chap div.link").map { element ->
             ChapterDto(
                 title = element.selectFirst("a")?.text() ?: "",
                 url = baseUrl + (element.selectFirst("a")?.attr("href") ?: ""),

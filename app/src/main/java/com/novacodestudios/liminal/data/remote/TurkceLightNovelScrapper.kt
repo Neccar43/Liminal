@@ -10,7 +10,9 @@ import android.webkit.WebViewClient
 import com.novacodestudios.liminal.data.remote.dto.ChapterDto
 import com.novacodestudios.liminal.data.remote.dto.NovelDetailDto
 import com.novacodestudios.liminal.data.remote.dto.NovelPreviewDto
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -25,12 +27,12 @@ import kotlin.coroutines.resume
 class TurkceLightNovelScrapper(private val context: Context) {
 
     // TODO: bu fonksiyon haricnde diğerlerinde sıkıntı var bunu düzelt
-    suspend fun getNovelList(): List<NovelPreviewDto> {
+    suspend fun getNovelList(): List<NovelPreviewDto> = withContext(Dispatchers.IO){
         val document: Document = Jsoup.connect("https://turkcelightnovels.com")
             //.timeout(60_000)  // Timeout ayarını belirt
             .get()
 
-        return document.select("div.page-item-detail").map { element ->
+         document.select("div.page-item-detail").map { element ->
             NovelPreviewDto(
                 name = element.selectFirst("h3.h5")?.text() ?: "",
                 imageUrl = element.selectFirst("img")?.attr("data-src") ?: "",
@@ -42,12 +44,12 @@ class TurkceLightNovelScrapper(private val context: Context) {
     }
 
 
-    suspend fun getNovelDetail(detailPageUrl: String): NovelDetailDto {
+    suspend fun getNovelDetail(detailPageUrl: String): NovelDetailDto = withContext(Dispatchers.IO){
         val document: Document = Jsoup.connect(detailPageUrl)
             //.timeout(60_000)  // Timeout ayarını belirt
             .get()
 
-        return NovelDetailDto(
+         NovelDetailDto(
             name = document.selectFirst("div.post-title h1")?.text() ?: "",
             imageUrl = document.selectFirst("div.summary_image img")?.attr("data-src") ?: "",
             author = document.selectFirst("div.author-content a")?.text() ?: "",
@@ -57,7 +59,7 @@ class TurkceLightNovelScrapper(private val context: Context) {
         )
     }
 
-    suspend fun getNovelChapterContent(chapterUrl: String): List<String> {
+    suspend fun getNovelChapterContent(chapterUrl: String): List<String> = withContext(Dispatchers.IO){
         val client = OkHttpClient()
 
         val request = Request.Builder()
@@ -67,7 +69,7 @@ class TurkceLightNovelScrapper(private val context: Context) {
         val response = client.newCall(request).execute()
         val htmlContent = response.body?.string() ?: ""
 
-        return parseHtmlContent(htmlContent)
+         parseHtmlContent(htmlContent)
     }
 
     private fun parseHtmlContent(html: String): List<String> {
