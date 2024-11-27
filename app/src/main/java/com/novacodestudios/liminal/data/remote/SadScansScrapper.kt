@@ -18,15 +18,19 @@ class SadScansScrapper : MangaScraper {
             val document: Document = Jsoup.connect(detailPageUrl).get()
 
              MangaDetailDto(
-                name = document.selectFirst("div.title h2")?.text()
-                    ?: "",
-                imageUrl = (baseUrl + document.selectFirst("div.series-image img")?.attr("src")),
-                summary = document.selectFirst("div.summary p")?.text()
-                    ?: "",  // "summary" sınıfındaki div içindeki p etiketindeki metni al
-                author = document.select("div.author span").getOrNull(1)?.text()
-                    ?: "",
-                chapters = emptyList()
-            )
+                 name = document.selectFirst("div.title h2")?.text()
+                     ?: "",
+                 imageUrl = (baseUrl + document.selectFirst("div.series-image img")?.attr("src")),
+                 summary = document.selectFirst("div.summary p")?.text()
+                     ?: "",  // "summary" sınıfındaki div içindeki p etiketindeki metni al
+                 author = document.select("div.author span").getOrNull(1)?.text()
+                     ?: "",
+                 chapters = emptyList(),
+                 status = document.select("div.status span").getOrNull(1)?.text()
+                     ?: "",
+                 tags = emptyList(), //sadscans de tag kısmı yok
+                 source = source,
+             )
         }
 
     override suspend fun getMangaChapterImages(chapterUrl: String): List<String> = withContext(Dispatchers.IO){

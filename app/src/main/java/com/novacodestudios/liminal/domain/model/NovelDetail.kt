@@ -1,15 +1,16 @@
 package com.novacodestudios.liminal.domain.model
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.novacodestudios.liminal.data.remote.dto.Tag
 
-@Serializable
 data class NovelDetail(
-    @SerialName("novel_name") override val name: String,
-    @SerialName("novel_imageUrl") override val imageUrl: String,
-    @SerialName("novel_author") override val author: String,
+    override val name: String,
+    override val imageUrl: String,
+    override val author: String,
     val rate: String,
-    @SerialName("novel_summary") override val summary: String,
-    @SerialName("novel_chapters") override val chapters: List<Chapter>,
-    @SerialName("novel_type") override val type: SeriesType = SeriesType.NOVEL
-) : SeriesDetail(name, imageUrl, author, summary, chapters, type)
+    override val summary: String,
+    override val chapters: List<Chapter>,
+    override val type: SeriesType = SeriesType.NOVEL,
+    override val source: Source,
+    override val status: String,
+    override val tags: List<Tag>,
+    ) : SeriesDetail(name, imageUrl, author, summary, chapters, type, source, status, tags)

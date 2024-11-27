@@ -30,6 +30,7 @@ import com.novacodestudios.liminal.prensentation.library.component.SeriesItem
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
 
+// TODO: kullanıcının en son okuduğu mangaya göre liste sıralamasını yap
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel(),

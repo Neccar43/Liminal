@@ -133,12 +133,9 @@ class MainActivity : ComponentActivity() {
                                         )
                                     },
                                     onNavigateNovelReadingScreen = { chapter, detailUrl ->
+                                        NavArguments.currentChapter = chapter
                                         navController.navigate(
-                                            Screen.NovelReading(
-                                                detailPageUrl = detailUrl.encodeUrl(),
-                                                currentChapter = chapter.withEncodedUrl()
-                                                    .toUiChapter(),
-                                            )
+                                            Screen.NovelReading
                                         )
                                     },
                                 )
@@ -167,47 +164,6 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
-            }
-        }
-    }
-
-
-    private suspend fun downloadImage(
-        context: Context,
-        url: String,
-        seriesName: String,
-        chapter: String,
-        pageNumber: Int
-    ): Boolean {
-        val client = OkHttpClient()
-        val request = Request.Builder().url(url).build()
-
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) throw IOException("Unexpected code $response")
-
-                // URL'den uzantıyı alma
-                val fileExtension =
-                    url.substringAfterLast('.', "jpg") // Uzantıyı al, varsayılan "jpg"
-                val directory = File(context.filesDir, "Manga/$seriesName/$chapter")
-                if (!directory.exists()) {
-                    directory.mkdirs() // Klasör oluştur
-                }
-
-                val file = File(
-                    directory,
-                    "page$pageNumber.$fileExtension"
-                ) // Sayfa numarası ve uzantı ile dosya ismi
-                val outputStream = FileOutputStream(file)
-                outputStream.use { output ->
-                    response.body?.byteStream()?.copyTo(output)
-                }
-
-                true // Başarılıysa
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false // Hata oluştuysa
             }
         }
     }

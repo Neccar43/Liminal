@@ -42,7 +42,8 @@ import com.novacodestudios.liminal.prensentation.home.component.SeriesGridList
 import com.novacodestudios.liminal.prensentation.home.component.SeriesListItem
 import kotlinx.coroutines.flow.collectLatest
 
-
+// TODO: Kaynak isimlerini daha estetik hale getir
+// TODO: search barı top app bar a taşı
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
@@ -82,7 +83,7 @@ fun HomeContent(
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
-        topBar = { HomeTopBar(scrollBehavior) },
+        topBar = { HomeTopBar(scrollBehavior, onSearchClick = {}) },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets
             .exclude(NavigationBarDefaults.windowInsets)

@@ -56,7 +56,7 @@ fun SeriesItem(
                 .width(70.dp)
                 .height(90.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop
         )
 
@@ -69,13 +69,17 @@ fun SeriesItem(
         ) {
             Text(
                 text = series.name,
-                style = MaterialTheme.typography.titleLarge,
-                //color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
-            Text(text = series.currentChapterName!!, style = MaterialTheme.typography.labelLarge)
+            Text(
+                text = series.currentChapterName!!,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 

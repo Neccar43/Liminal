@@ -42,7 +42,7 @@ fun SeriesListItem(
                 .height(itemHeight)
                 .clip(shape = RoundedCornerShape(8.dp))
                 .border(
-                    width = 2.dp,
+                    width = 1.dp,
                     color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(8.dp)
                 ),

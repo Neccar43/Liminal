@@ -2,8 +2,11 @@ package com.novacodestudios.liminal.prensentation.detail
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,15 +42,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.novacodestudios.liminal.data.remote.dto.Tag
 import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.domain.model.MangaDetail
 import com.novacodestudios.liminal.domain.model.SeriesType
+import com.novacodestudios.liminal.domain.model.Source
 import com.novacodestudios.liminal.prensentation.component.LiminalProgressIndicator
 import com.novacodestudios.liminal.prensentation.detail.component.ChapterItem
 import com.novacodestudios.liminal.prensentation.detail.component.DetailTopBar
+import com.novacodestudios.liminal.prensentation.detail.component.TagChip
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
 
+// TODO: Pading leri standart hale getir
+// TODO: yazı boyutlandırmalrını yeniden ayarla
+// TODO: paylaş butonu ekle
 @Composable
 fun DetailScreen(
     viewModel: DetailViewModel = hiltViewModel(),
@@ -76,7 +85,10 @@ fun DetailScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class,
+    ExperimentalLayoutApi::class
+)
 @Composable
 fun DetailContent(
     state: DetailState,
@@ -144,6 +156,12 @@ fun DetailContent(
                         style = MaterialTheme.typography.titleMedium,
                         // color = Color.White
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.detail?.status ?: "",
+                        style = MaterialTheme.typography.bodyLarge,
+                        // color = Color.White
+                    )
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -153,6 +171,32 @@ fun DetailContent(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+
+            if (state.detail?.tags?.isNotEmpty() == true) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Etiketler",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.detail.tags.forEach { tag ->
+                        TagChip(
+                            modifier = Modifier,
+                            tag = tag,
+                            onTagClick = {} // TODO: Özel bir ekrana yönlendir arama ekranına yönledir
+                        )
+                    }
+                }
+
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             val firstChapter =
@@ -204,6 +248,11 @@ fun DetailContent(
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
+                Text(
+                    text = "${state.chapterList.size} bölüm",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 state.chapterList.forEach { chapter ->
                     ChapterItem(
@@ -220,7 +269,9 @@ fun DetailContent(
                                     state.detailPageUrl
                                 )
                             }
-                        }
+                        },
+                        onDownload = {}, // TODO: Chapter bazlı indirme işlemini ekle
+                        onDelete = {}
 
                     )
                 }
@@ -234,58 +285,71 @@ fun DetailContent(
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DetailPreview() {
+    val summary =
+        "Yuuji bir atletizm dehasıdır ama koşuya hiç ilgisi yoktur. " +
+                "Bilinmezleri Araştırma Kulübünde çok mutludur. Her ne kadar kulüpte eğlencesine bulunsa bile, okulda gerçek bir ruh ortaya çıkınca işler ciddiye biner! " +
+                "Hayat, Sugisawa Şehrindeki 3 Numaralı Lisedeki çocuklar için tuhaflaşmaya başlamak üzere! Not: 0. cildi (0 ile başlayan bölümler) 91. bölümden sonra okumanızı tavsiye ederiz."
+
     LiminalTheme {
         DetailContent(
             state = DetailState(
-                isLoading = true,
+                isLoading = false,
                 detail = MangaDetail(
                     name = "Manga Name",
-                    imageUrl = "https://via.placeholder.com/150",
+                    imageUrl = "https://sadscans.com/assets/series/60953d39538a8/laaa.jpg",
                     author = "Author",
-                    summary = "Summary",
-                    chapters = listOf(
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
-                        Chapter(
-                            title = "Chapter 1",
-                            releaseDate = "2021-01-01",
-                            url = ""
-                        ),
+                    chapters = emptyList(),
+                    type = SeriesType.MANGA,
+                    summary = "summary",
+                    source = Source.TEMPEST,
+                    tags = listOf(
+                        Tag("Seinen", ""),
+                        Tag("Aksiyon", ""),
+                        Tag("Drama", ""),
                     ),
-                    type = SeriesType.MANGA
+                    status = "Güncel"
+                ),
+                chapterList = listOf(
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
+                    Chapter(
+                        title = "Chapter 1",
+                        releaseDate = "2021-01-01",
+                        url = ""
+                    ),
                 ),
                 type = SeriesType.MANGA,
                 detailPageUrl = ""

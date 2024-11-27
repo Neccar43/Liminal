@@ -9,14 +9,8 @@ fun NovelDetailDto.toNovelDetail() = NovelDetail(
     author = author,
     summary = summary,
     rate = rate,
-    chapters = chapters.map { it.toChapter() }
-)
-
-fun NovelDetail.toNovelDetailDto() = NovelDetailDto(
-    name = name,
-    imageUrl = imageUrl,
-    author = author,
-    summary = summary,
-    rate = rate,
-    chapters = chapters.map { it.toChapterDto() }
+    chapters = chapters.map { it.toChapter() },
+    source = source,
+    status = status,
+    tags = tags,
 )

@@ -4,18 +4,16 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
 import com.novacodestudios.liminal.data.repository.ChapterRepository
 import com.novacodestudios.liminal.data.repository.NovelRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
 import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.prensentation.navigation.Screen
-import com.novacodestudios.liminal.prensentation.navigation.toChapter
+import com.novacodestudios.liminal.prensentation.mangaReading.MangaReaderViewModel
+import com.novacodestudios.liminal.prensentation.navigation.NavArguments
 import com.novacodestudios.liminal.util.Resource
 import com.novacodestudios.liminal.util.getNextChapter
 import com.novacodestudios.liminal.util.getPreviousChapter
@@ -32,56 +30,38 @@ class NovelReadingViewModel @Inject constructor(
     private val repository: NovelRepository,
     private val chapterRepository: ChapterRepository,
     private val seriesRepository: SeriesRepository,
-    savedStateHandle: SavedStateHandle
 ) :
     ViewModel() {
     var state by mutableStateOf(
-        NovelReadingState(
-            currentChapter = savedStateHandle.toRoute<Screen.NovelReading>().currentChapter.toChapter(),
-            detailPageUrl = savedStateHandle.toRoute<Screen.NovelReading>().detailPageUrl
-        )
+        NovelReadingState()
     )
         private set
 
     init {
         viewModelScope.launch {
-            getSeriesEntity()
-            getChapterContent(state.currentChapter.url)
-        }
-    }
+            NavArguments.currentChapter?.let { chapter ->
+                val seriesEntity = getSeriesEntity(chapter = chapter)
+                state = state.copy(seriesEntity = seriesEntity)
 
-  /*  private fun getSeriesEntity() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val chapterId = state.currentChapter.url.hashToMD5()
-            seriesRepository.getSeriesByChapterId(chapterId).collectLatest { resource ->
-                withContext(Dispatchers.Main) {
-                    when (resource) {
-                        is Resource.Error -> {
-                            Log.e(TAG, "getSeriesEntity: Hata:${resource.exception}")
-                        }
+                if (state.seriesEntity != null) {
+                    getChapterList()
 
-                        Resource.Loading -> {}
-                        is Resource.Success -> {
-                            Log.d(TAG, "getSeriesEntity: series: ${resource.data}")
-                            state = state.copy(seriesEntity = resource.data)
-                            getChapterList()
-                        }
-                    }
+                    Log.d(TAG, "init: chapter: $chapter ")
+                    state = state.copy(currentChapter = chapter)
+
+                    getChapterContent(state.currentChapter.url)
                 }
             }
         }
-    }*/
+    }
 
-    private fun getSeriesEntity() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val chapterId = state.currentChapter.url.hashToMD5()
-            val seriesEntity=seriesRepository.getSeriesByChapterId(chapterId)
-            state = state.copy(seriesEntity = seriesEntity)
-            if (state.seriesEntity!=null){
-                getChapterList()
-            }
 
-        }
+    private suspend fun getSeriesEntity(chapter: Chapter): SeriesEntity {
+        val chapterId = chapter.url.hashToMD5()
+        val seriesEntity = seriesRepository.getSeriesByChapterId(chapterId)
+        state = state.copy(seriesEntity = seriesEntity)
+        return seriesEntity
+
     }
 
     private fun getChapterList() {
@@ -203,8 +183,7 @@ class NovelReadingViewModel @Inject constructor(
 
 data class NovelReadingState(
     val chapters: List<Chapter> = emptyList(),
-    val currentChapter: Chapter,
-    val detailPageUrl: String,
+    val currentChapter: Chapter = Chapter("", "", "", null),
     val chapterContent: List<String> = emptyList(),
     val isLoading: Boolean = false,
     val seriesEntity: SeriesEntity? = null,

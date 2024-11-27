@@ -18,8 +18,8 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                 navController.navigate(
                     Screen.Detail(
                         preview.detailPageUrl,
-                        preview.type.name
-                    )
+                        preview.type.name,
+                        )
                 )
             })
         }
@@ -35,11 +35,9 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     )
                 },
                 onNavigateNovelReadingScreen = { chapter, detailUrl ->
+                    NavArguments.currentChapter = chapter
                     navController.navigate(
-                        Screen.NovelReading(
-                            detailPageUrl = detailUrl.encodeUrl(),
-                            currentChapter = chapter.withEncodedUrl().toUiChapter(),
-                        )
+                        Screen.NovelReading
                     )
                 }
             )
@@ -52,7 +50,6 @@ object NavArguments {
     var currentChapter: Chapter? = null
     var chapterList: List<Chapter> = emptyList()
     var filesDir: File? = null
-   // var seriesEntity: SeriesEntity? = null
 }
 
 

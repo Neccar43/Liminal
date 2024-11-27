@@ -43,20 +43,20 @@ object MangaModule {
 
     @Singleton
     @Provides
-    fun provideTempestScrapper(@ApplicationContext context: Context): TempestScrapper {
-        return TempestScrapper(context)
+    fun provideTempestScrapper(): TempestScrapper {
+        return TempestScrapper()
     }
 
     @Singleton
     @Provides
-    fun provideSadScansScrapper(@ApplicationContext context: Context): SadScansScrapper {
-        return SadScansScrapper(context)
+    fun provideSadScansScrapper(): SadScansScrapper {
+        return SadScansScrapper()
     }
 
     @Singleton
     @Provides
-    fun provideTurkceLightNovelScrapper(@ApplicationContext context: Context): TurkceLightNovelScrapper {
-        return TurkceLightNovelScrapper(context)
+    fun provideTurkceLightNovelScrapper(): TurkceLightNovelScrapper {
+        return TurkceLightNovelScrapper()
     }
 
     @Singleton

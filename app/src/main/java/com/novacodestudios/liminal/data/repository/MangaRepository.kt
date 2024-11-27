@@ -79,8 +79,6 @@ class MangaRepository @Inject constructor(
         detailPageUrl: String
     ): MangaDetail {
         return scraper.getMangaDetail(detailPageUrl).toMangaDetail()
-
-
     }
 
     // TODO: Design patern uygula

@@ -31,6 +31,12 @@ import com.novacodestudios.liminal.prensentation.mangaReading.component.ReadMode
 import com.novacodestudios.liminal.prensentation.mangaReading.component.WebtoonReader
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 
+// TODO: chpterdaki kalan sayfa sayısını göster
+// TODO: tüm chapterlara erişebileceğin bir buton ekle
+// TODO: kullanıcı bir manga paneline basılı tuttuğunda bir menü göster (kaydet paylaş vs)
+// TODO: Kaybolma animasyonun daha estetik hale getir
+// TODO: indükatöre önceki ve sonraki chaptera geçme butonu ekle
+// TODO: tam ekrandayken navigasyon ve durum çubuğunu görünmez hale getir
 @Composable
 fun MangaReadingScreen(
     viewModel: MangaReaderViewModel = hiltViewModel(),

@@ -126,7 +126,6 @@ private fun Preview() {
         ) {
             NovelReadingContent(state = NovelReadingState(
                 currentChapter = Chapter("", "", ""),
-                detailPageUrl = "",
                 error = "İçerik yüklemedi. Lütfen tekrar deneyin.",
                 isLoading = false,
             ),

@@ -14,7 +14,7 @@ sealed class Screen {
     data class Detail(val detailPageUrl: String, val typeString: String) : Screen()
 
     @Serializable
-    data class NovelReading(val currentChapter: UiChapter, val detailPageUrl: String) : Screen()
+    data object NovelReading : Screen()
 
     /*@Serializable
     data class MangaReading(

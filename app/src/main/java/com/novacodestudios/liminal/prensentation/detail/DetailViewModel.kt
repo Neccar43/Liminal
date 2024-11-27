@@ -44,7 +44,7 @@ class DetailViewModel @Inject constructor(
     var state by mutableStateOf(
         DetailState(
             detailPageUrl = savedStateHandle.toRoute<Screen.Detail>().detailPageUrl,
-            type = savedStateHandle.toRoute<Screen.Detail>().typeString.toType()
+            type = savedStateHandle.toRoute<Screen.Detail>().typeString.toType(),
         )
     )
         private set
@@ -123,34 +123,36 @@ class DetailViewModel @Inject constructor(
 
     private fun getMangaChapterList() {
         viewModelScope.launch(Dispatchers.IO) {
-            mangaRepo.getMangaChapterList(state.detailPageUrl).collectLatest { resource -> // TODO: handle resource fonksiyonu ekle
-                withContext(Dispatchers.Main) {
-                    when (resource) {
-                        is Resource.Error -> {
-                            Log.e(TAG, "getMangaChapterList: hata:${resource.exception}")
-                            state = state.copy(
-                                isChapterListLoading = false,
-                                chapterListError = resource.exception.localizedMessage
-                                    ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
-                            )
-                            _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
-                        }
+            mangaRepo.getMangaChapterList(state.detailPageUrl)
+                .collectLatest { resource -> // TODO: handle resource fonksiyonu ekle
+                    withContext(Dispatchers.Main) {
+                        when (resource) {
+                            is Resource.Error -> {
+                                Log.e(TAG, "getMangaChapterList: hata:${resource.exception}")
+                                state = state.copy(
+                                    isChapterListLoading = false,
+                                    chapterListError = resource.exception.localizedMessage
+                                        ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
+                                )
+                                _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
+                            }
 
-                        Resource.Loading -> {
-                            state = state.copy(isChapterListLoading = true, chapterListError = null)
-                        }
+                            Resource.Loading -> {
+                                state =
+                                    state.copy(isChapterListLoading = true, chapterListError = null)
+                            }
 
-                        is Resource.Success -> {
-                            state = state.copy(
-                                chapterListError = null,
-                                isChapterListLoading = false,
-                                chapterList = resource.data
-                            )
+                            is Resource.Success -> {
+                                state = state.copy(
+                                    chapterListError = null,
+                                    isChapterListLoading = false,
+                                    chapterList = resource.data
+                                )
+                            }
                         }
                     }
-                }
 
-            }
+                }
         }
     }
 
@@ -196,32 +198,31 @@ class DetailViewModel @Inject constructor(
 
     private fun getNovelChapterList() {
         viewModelScope.launch(Dispatchers.IO) {
-            novelRepo.getNovelChapters(state.detailPageUrl).collectLatest { resource ->
-                withContext(Dispatchers.Main) {
-                    when (resource) {
-                        is Resource.Error -> {
-                            Log.e(TAG, "getNovelChapters: hata:${resource.exception}")
-                            state = state.copy(
-                                isChapterListLoading = false,
-                                chapterListError = resource.exception.localizedMessage
-                                    ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
-                            )
-                            _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
-                        }
+            novelRepo.getNovelChapters(detailPageUrl = state.detailPageUrl).collectLatest { resource ->
+                when (resource) {
+                    is Resource.Error -> {
+                        Log.e(TAG, "getNovelChapters: hata:${resource.exception}")
+                        state = state.copy(
+                            isChapterListLoading = false,
+                            chapterListError = resource.exception.localizedMessage
+                                ?: "Bölümler yüklenrken bir hata oluştu lütfrn tekar deneyin"
+                        )
+                        _eventFlow.emit(UIState.ShowSnackBar(state.chapterListError!!))
+                    }
 
-                        Resource.Loading -> {
-                            state = state.copy(isChapterListLoading = true, chapterListError = null)
-                        }
+                    Resource.Loading -> {
+                        state = state.copy(isChapterListLoading = true, chapterListError = null)
+                    }
 
-                        is Resource.Success -> {
-                            state = state.copy(
-                                chapterListError = null,
-                                isChapterListLoading = false,
-                                chapterList = resource.data
-                            )
-                        }
+                    is Resource.Success -> {
+                        state = state.copy(
+                            chapterListError = null,
+                            isChapterListLoading = false,
+                            chapterList = resource.data
+                        )
                     }
                 }
+
 
             }
         }
