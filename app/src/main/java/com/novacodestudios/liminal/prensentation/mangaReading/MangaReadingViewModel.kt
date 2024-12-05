@@ -7,33 +7,33 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
+import androidx.navigation.toRoute
 import com.novacodestudios.liminal.data.repository.ChapterRepository
-import com.novacodestudios.liminal.data.repository.MangaRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
-import com.novacodestudios.liminal.domain.mapper.toChapterList
 import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.prensentation.navigation.NavArguments
-import com.novacodestudios.liminal.util.Resource
-import com.novacodestudios.liminal.util.getNextChapter
-import com.novacodestudios.liminal.util.getPreviousChapter
-import com.novacodestudios.liminal.util.hashToMD5
+import com.novacodestudios.liminal.domain.model.Content
+import com.novacodestudios.liminal.domain.model.Series
+import com.novacodestudios.liminal.domain.util.onError
+import com.novacodestudios.liminal.domain.util.onSuccess
+import com.novacodestudios.liminal.prensentation.navigation.Screen
+import com.novacodestudios.liminal.prensentation.util.UiText
+import com.novacodestudios.liminal.prensentation.util.getNextChapter
+import com.novacodestudios.liminal.prensentation.util.getPreviousChapter
+import com.novacodestudios.liminal.prensentation.util.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
-class MangaReaderViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
-    private val repository: MangaRepository,
+class MangaReadingViewModel @Inject constructor(
     private val chapterRepository: ChapterRepository,
     private val seriesRepository: SeriesRepository,
+    private val filesDir: File,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     var state by mutableStateOf(MangaState())
         private set
@@ -43,46 +43,19 @@ class MangaReaderViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            NavArguments.currentChapter?.let { chapter ->
-                val seriesEntity = getSeriesEntity(chapter = chapter)
-                state = state.copy(seriesEntity = seriesEntity)
-                if (state.seriesEntity != null) {
-                    val chapters = NavArguments.chapterList.reversed()
-
-                    Log.d(TAG, "init: chapter: $chapter, chapters: $chapters ")
-                    state = state.copy(currentChapter = chapter, chapters = chapters)
-
-                    getMangaImages(chapter, isNextChapter = null)
-                }
-
-
+            val chapterId = savedStateHandle.toRoute<Screen.MangaReading>().chapterId
+            val series = seriesRepository.getSeriesByChapterId(chapterId)
+            state = state.copy(series = series)
+            if (state.series != null) {
+                val chapters = chapterRepository.getChaptersBySeriesId(state.series!!.id).first().reversed()
+                val chapter = chapters.find { it.id == chapterId } ?: return@launch
+                state = state.copy(currentChapter = chapter, chapters = chapters)
+                getMangaImages(chapter, isNextChapter = null)
             }
         }
 
-
     }
 
-    // TODO: view modelde susupend fonksiyon olması sakıncalı mı bunu araştır
-    private suspend fun getSeriesEntity(chapter: Chapter): SeriesEntity {
-        val id = chapter.url.hashToMD5()
-        return seriesRepository.getSeriesByChapterId(id)
-
-    }
-
-
-    private fun getChapters(seriesId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            chapterRepository.getChapters(seriesId).collectLatest {
-                when (it) {
-                    is Resource.Error -> {}
-                    Resource.Loading -> {}
-                    is Resource.Success -> {
-                        state = state.copy(chapters = it.data.toChapterList())
-                    }
-                }
-            }
-        }
-    }
 
     private fun getMangaImages(chapter: Chapter, isNextChapter: Boolean?) {
         val isDownloaded = chapter.filePath != null
@@ -93,60 +66,55 @@ class MangaReaderViewModel @Inject constructor(
         getMangaImagesFromRemote(chapter.url, isNextChapter = isNextChapter)
     }
 
+
     private fun getMangaImagesFromRemote(
         chapterUrl: String,
         isNextChapter: Boolean?
-    ) { // TODO: Refactor et
+    ) {
         Log.d(TAG, "getMangaImagesFromRemote: çalışıyor")
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.getMangaImageUrls(chapterUrl).collectLatest { resource ->
-                withContext(Dispatchers.Main) {
-                    when (resource) {
-                        is Resource.Error -> {
-                            state = state.copy(isLoading = false)
-                            _eventFlow.emit(
-                                UIEvent.ShowToast(
-                                    resource.exception.localizedMessage ?: "An error occurred"
-                                )
-                            )
-                        }
-
-                        Resource.Loading -> state = state.copy(isLoading = true)
-                        is Resource.Success -> {
-                            Log.d(TAG, "getMangaImages: ${resource.data}")
-                            if (isNextChapter == null) {
-                                state =
-                                    state.copy(imageSources = resource.data, isLoading = false)
-                                return@withContext
-                            }
-
-                            if (isNextChapter) {
-                                state = state.copy(
-                                    isLoading = false,
-                                    imageSources = resource.data,
-                                    seriesEntity = state.seriesEntity!!.copy(currentPageIndex = 0)
-                                )
-                            } else {
-                                state = state.copy(
-                                    isLoading = false,
-                                    imageSources = resource.data,
-                                    seriesEntity = state.seriesEntity!!.copy(currentPageIndex = resource.data.size - 1)
-                                )
-                            }
-                        }
+        state = state.copy(isLoading = true)
+        viewModelScope.launch {
+            seriesRepository.getChapterContent(chapterUrl)
+                .onSuccess {
+                    // TODO: tek iterasyonda hallet
+                    val imageUrls = it.filterIsInstance<Content.Image>().map { image -> image.url }
+                    state = state.copy(isLoading = false)
+                    Log.d(TAG, "getMangaImages: $imageUrls")
+                    if (isNextChapter == null) {
+                        state =
+                            state.copy(imageSources = imageUrls, isLoading = false)
+                        return@onSuccess
                     }
+
+                    state = if (isNextChapter) {
+                        state.copy(
+                            isLoading = false,
+                            imageSources = imageUrls,
+                            series = state.series!!.copy(currentPageIndex = 0)
+                        )
+                    } else {
+                        state.copy(
+                            isLoading = false,
+                            imageSources = imageUrls,
+                            series = state.series!!.copy(currentPageIndex = imageUrls.size - 1)
+                        )
+                    }
+
+                }.onError {
+                    state = state.copy(isLoading = false)
+                    _eventFlow.emit(UIEvent.ShowSnackbar(it.toUiText()))
                 }
-            }
         }
     }
+
 
     private fun getMangaImagesFromLocale(chapter: Chapter, isNextChapter: Boolean?) {
         Log.d(TAG, "getMangaImagesFromLocale: çalışıyor")
         state = state.copy(isLoading = true)
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val path = chapter.filePath!!
 
-            val imagesDirectory = File(NavArguments.filesDir!!, path)
+            val imagesDirectory = File(filesDir, path)
 
             if (imagesDirectory.exists() && imagesDirectory.isDirectory) {
                 val imageFiles =
@@ -162,25 +130,25 @@ class MangaReaderViewModel @Inject constructor(
 
                 Log.d(TAG, "getMangaImagesFromLocale: imageFiles: $imageFiles")
 
-                withContext(Dispatchers.Main) {
 
-                    Log.d(TAG, "getMangaImagesFromLocale: seriesEntity: ${state.seriesEntity}")
-                    state = if (isNextChapter == null) {
-                        state.copy(imageSources = imageFiles, isLoading = false)
-                    } else if (isNextChapter) {
-                        state.copy(
-                            isLoading = false,
-                            imageSources = imageFiles,
-                            seriesEntity = state.seriesEntity!!.copy(currentPageIndex = 0)
-                        )
-                    } else {
-                        state.copy(
-                            isLoading = false,
-                            imageSources = imageFiles,
-                            seriesEntity = state.seriesEntity!!.copy(currentPageIndex = imageFiles.size - 1)
-                        )
-                    }
+
+                Log.d(TAG, "getMangaImagesFromLocale: seriesEntity: ${state.series}")
+                state = if (isNextChapter == null) {
+                    state.copy(imageSources = imageFiles, isLoading = false)
+                } else if (isNextChapter) {
+                    state.copy(
+                        isLoading = false,
+                        imageSources = imageFiles,
+                        series = state.series!!.copy(currentPageIndex = 0)
+                    )
+                } else {
+                    state.copy(
+                        isLoading = false,
+                        imageSources = imageFiles,
+                        series = state.series!!.copy(currentPageIndex = imageFiles.size - 1)
+                    )
                 }
+
             }
         }
     }
@@ -191,13 +159,9 @@ class MangaReaderViewModel @Inject constructor(
                 state = state.copy(readingMode = event.readingMode)
             }
 
-            MangaEvent.OnNextChapter -> {
-                getNextChapter()
-            }
+            MangaEvent.OnNextChapter -> getNextChapter()
 
-            MangaEvent.OnPreviousChapter -> {
-                getPreviousChapter()
-            }
+            MangaEvent.OnPreviousChapter -> getPreviousChapter()
 
             is MangaEvent.OnPageChange -> {
                 Log.d(TAG, "onEvent: page index: ${event.pageIndex}")
@@ -206,45 +170,32 @@ class MangaReaderViewModel @Inject constructor(
                     pageIndex = event.pageIndex
                 )
             }
+
+            is MangaEvent.OnChapterChange -> {
+                state = state.copy(currentChapter = event.chapter)
+                getMangaImages(event.chapter, isNextChapter = null)
+            }
         }
     }
 
     private fun getNextChapter() {
-        Log.d(TAG, "getNextChapter: çalıştı")
-        val currentChapter = state.currentChapter
-        Log.d(TAG, "getNextChapter: currentChapter $currentChapter")
-        setChapterIsReadTrue(currentChapter)
-        Log.d(TAG, "getNextChapter: chapters: ${state.chapters}")
-        val nextChapter = state.chapters.getNextChapter(currentChapter)
-        Log.d(TAG, "getNextChapter: nextChapter $nextChapter")
-        nextChapter ?: return
-        updateSeriesCurrentChapterAndIndex(nextChapter, 0)
-        state = state.copy(currentChapter = nextChapter)
-        getMangaImages(nextChapter, isNextChapter = true)
-
-    }
-
-    private fun setChapterIsReadTrue(chapter: Chapter) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val id = chapter.url.hashToMD5()
-            Log.d(TAG, "setChapterIsReadTrue: id: $id")
-            chapterRepository.setIsReadByChapterId(id, isRead = true).collectLatest {
-                when (it) {
-                    is Resource.Error -> {
-                        Log.e(TAG, "setChapterIsReadTrue: hata", it.exception)
-                    }
-
-                    Resource.Loading -> {
-                        Log.d(TAG, "setChapterIsReadTrue: loading")
-                    }
-
-                    is Resource.Success -> {
-                        Log.d(TAG, "setChapterIsReadTrue: success")
-                    }
-                }
-            }
+        viewModelScope.launch {
+            Log.d(TAG, "getNextChapter: çalıştı")
+            val currentChapter = state.currentChapter
+            Log.d(TAG, "getNextChapter: currentChapter $currentChapter")
+            chapterRepository.setIsReadByChapterId(currentChapter.id, isRead = true)
+            Log.d(TAG, "getNextChapter: chapters: ${state.chapters}")
+            val nextChapter = state.chapters.getNextChapter(currentChapter)
+            Log.d(TAG, "getNextChapter: nextChapter $nextChapter")
+            nextChapter ?: return@launch
+            updateSeriesCurrentChapterAndIndex(nextChapter, 0)
+            state = state.copy(currentChapter = nextChapter)
+            getMangaImages(nextChapter, isNextChapter = true)
         }
+
+
     }
+
 
     private fun getPreviousChapter() {
         val previousChapter = state.chapters.getPreviousChapter(state.currentChapter) ?: return
@@ -254,36 +205,15 @@ class MangaReaderViewModel @Inject constructor(
 
     private fun updateSeriesCurrentChapterAndIndex(chapter: Chapter, pageIndex: Int) {
         viewModelScope.launch {
-            val seriesEntity = state.seriesEntity
-            Log.d(TAG, "updateSeriesCurrentChapterAndIndex: seriesEntity: $seriesEntity")
-            if (seriesEntity != null) {
-                val chapterId = chapter.url.hashToMD5()
-                val seriesEntity = seriesEntity.copy(
-                    lastReadingDateTime = System.currentTimeMillis(),
-                    currentChapterId = chapterId,
-                    currentChapterName = chapter.title,
-                    currentPageIndex = pageIndex
-                )
+            val series = state.series
+            Log.d(TAG, "updateSeriesCurrentChapterAndIndex: series: $series")
+            if (series != null) {
+                val series = series.copy(currentPageIndex = pageIndex)
                 Log.d(
                     TAG,
-                    "updateSeriesCurrentChapterAndIndex: index: $pageIndex series: $seriesEntity"
+                    "updateSeriesCurrentChapterAndIndex: index: $pageIndex series: $series"
                 )
-                seriesRepository.upsert(seriesEntity).collectLatest { resource ->
-                    when (resource) {
-                        is Resource.Error -> {
-                            Log.e(
-                                TAG,
-                                "updateSeriesCurrentChapterAndIndex: Hata: ${resource.exception}"
-                            )
-                        }
-
-                        Resource.Loading -> {}
-                        is Resource.Success -> {
-                            Log.d(TAG, "updateSeriesCurrentChapterAndIndex: Index değiştirldi")
-                        }
-                    }
-
-                }
+                seriesRepository.upsert(series, currentChapter = chapter)
 
                 return@launch
             }
@@ -297,7 +227,7 @@ class MangaReaderViewModel @Inject constructor(
     }
 
     sealed class UIEvent {
-        data class ShowToast(val message: String) : UIEvent()
+        data class ShowSnackbar(val message: UiText) : UIEvent()
     }
 
 
@@ -305,11 +235,11 @@ class MangaReaderViewModel @Inject constructor(
 
 data class MangaState(
     val isLoading: Boolean = false,
-    val currentChapter: Chapter = Chapter("", "", "", null),
+    val currentChapter: Chapter = Chapter("", "", "", ""),
     val chapters: List<Chapter> = emptyList(),
     val imageSources: List<Any> = emptyList(),
     val readingMode: ReadingMode = ReadingMode.LEFT_TO_RIGHT,
-    val seriesEntity: SeriesEntity? = null,
+    val series: Series? = null,
 )
 
 enum class ReadingMode(val modeName: String) {
@@ -323,5 +253,11 @@ sealed class MangaEvent {
     data object OnNextChapter : MangaEvent()
     data object OnPreviousChapter : MangaEvent()
     data class OnPageChange(val pageIndex: Int) : MangaEvent()
+    data class OnChapterChange(val chapter:Chapter) : MangaEvent()
 }
+
+/*Series(
+"", "", "", "", "", emptyList(), SeriesType.MANGA, Source.SADSCANS, "",
+emptyList(), "",
+)*/
 

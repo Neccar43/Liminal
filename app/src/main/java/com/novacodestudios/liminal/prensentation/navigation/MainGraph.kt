@@ -4,12 +4,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
-import com.novacodestudios.liminal.domain.model.Chapter
 import com.novacodestudios.liminal.prensentation.home.HomeScreen
 import com.novacodestudios.liminal.prensentation.library.LibraryScreen
-import com.novacodestudios.liminal.util.encodeUrl
-import com.novacodestudios.liminal.util.withEncodedUrl
-import java.io.File
 
 fun NavGraphBuilder.mainGraph(navController: NavController) {
     navigation<Graph.Main>(startDestination = Screen.Home) {
@@ -19,37 +15,26 @@ fun NavGraphBuilder.mainGraph(navController: NavController) {
                     Screen.Detail(
                         preview.detailPageUrl,
                         preview.type.name,
-                        )
+                    )
                 )
             })
         }
 
         composable<Screen.Library> {
             LibraryScreen(
-                onNavigateMangaReadingScreen = { chapter, chapters ->
-                    NavArguments.currentChapter = chapter
-                    NavArguments.chapterList = chapters
-
+                onNavigateMangaReadingScreen = { chapterId ->
                     navController.navigate(
-                        Screen.MangaReading
+                        Screen.MangaReading(chapterId)
                     )
                 },
-                onNavigateNovelReadingScreen = { chapter, detailUrl ->
-                    NavArguments.currentChapter = chapter
+                onNavigateNovelReadingScreen = { chapterId ->
                     navController.navigate(
-                        Screen.NovelReading
+                        Screen.NovelReading(chapterId)
                     )
                 }
             )
         }
     }
-}
-
-// TODO: Kaldır
-object NavArguments {
-    var currentChapter: Chapter? = null
-    var chapterList: List<Chapter> = emptyList()
-    var filesDir: File? = null
 }
 
 

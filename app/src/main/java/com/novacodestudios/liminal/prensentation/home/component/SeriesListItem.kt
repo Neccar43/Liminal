@@ -18,13 +18,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.novacodestudios.liminal.domain.model.SeriesPreview
+import com.novacodestudios.liminal.domain.model.SeriesSummary
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun SeriesListItem(
-    series: SeriesPreview,
-    onClick: (SeriesPreview) -> Unit,
+    series: SeriesSummary,
+    onClick: (SeriesSummary) -> Unit,
     itemHeight: Dp = 180.dp,
     itemWidth: Dp = 120.dp
 ) {

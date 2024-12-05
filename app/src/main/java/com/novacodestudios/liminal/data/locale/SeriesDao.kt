@@ -1,7 +1,6 @@
 package com.novacodestudios.liminal.data.locale
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -18,21 +17,15 @@ interface SeriesDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(series: SeriesEntity)
 
-    @Delete
-    suspend fun deleteSeries(series: SeriesEntity)
+    @Query("DELETE FROM SeriesEntity WHERE id=:id")
+    suspend fun deleteSeriesById(id: String)
 
     @Query("SELECT * FROM SeriesEntity WHERE id = :id")
-    fun getSeriesById(id: String): Flow<SeriesEntity>
-
-    @Query("SELECT * FROM SeriesEntity WHERE id = :id")
-    fun getSeriesByIdNew(id: String): SeriesEntity
+    suspend fun getSeriesById(id: String): SeriesEntity?
 
     @Query("SELECT * FROM SeriesEntity")
     fun getAllSeries(): Flow<List<SeriesEntity>>
 
-    /*@Query("SELECT * FROM SeriesEntity WHERE id=(SELECT seriesId FROM ChapterEntity WHERE id=:chapterId)")
-    fun getSeriesEntityByChapterId(chapterId: String): Flow<SeriesEntity>*/
-
     @Query("SELECT * FROM SeriesEntity WHERE id=(SELECT seriesId FROM ChapterEntity WHERE id=:chapterId)")
-    fun getSeriesEntityByChapterId(chapterId: String): SeriesEntity
+    suspend fun getSeriesEntityByChapterId(chapterId: String): SeriesEntity?
 }

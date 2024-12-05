@@ -3,6 +3,8 @@ package com.novacodestudios.liminal.prensentation.mangaReading.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,7 +21,8 @@ fun MangaReadingTopBar(
     mangaName: String,
     chapterName: String,
     onNavigateUp: () -> Unit,
-    onClickReadModeBIcon: () -> Unit
+    onClickReadModeIcon: () -> Unit,
+    onClickChapterListIcon: () -> Unit,
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -39,8 +42,11 @@ fun MangaReadingTopBar(
             }
         },
         actions = {
-            IconButton(onClick = { onClickReadModeBIcon() }) {
+            IconButton(onClick = { onClickReadModeIcon() }) {
                 Icon(Icons.Filled.RemoveRedEye, null) // TODO: Iconu değştir
+            }
+            IconButton(onClick = { onClickChapterListIcon() }) {
+                Icon(Icons.AutoMirrored.Filled.List, null)
             }
         }
 

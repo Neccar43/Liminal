@@ -11,21 +11,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.novacodestudios.liminal.domain.model.SeriesPreview
-import com.novacodestudios.liminal.util.capitalizeFirstLetter
+import com.novacodestudios.liminal.domain.model.SeriesSummary
+import com.novacodestudios.liminal.domain.model.Source
+import com.novacodestudios.liminal.prensentation.util.getDisplayName
 
 @Composable
 fun SeriesGridList(
     modifier: Modifier = Modifier,
-    source: String,
-    seriesList: List<SeriesPreview>,
-    onClick: (SeriesPreview) -> Unit,
+    source: Source,
+    seriesList: List<SeriesSummary>,
+    onClick: (SeriesSummary) -> Unit,
 ) {
     Column(
         modifier = modifier,
     ) {
         Text(
-            text = "${source.capitalizeFirstLetter()} Kaynağından",
+            text = "${source.getDisplayName()} Kaynağından",
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(vertical = 8.dp)
         )

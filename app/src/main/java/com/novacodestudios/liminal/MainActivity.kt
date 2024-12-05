@@ -42,26 +42,13 @@ import androidx.navigation.compose.rememberNavController
 import com.novacodestudios.liminal.prensentation.component.BottomBar
 import com.novacodestudios.liminal.prensentation.detail.DetailScreen
 import com.novacodestudios.liminal.prensentation.mangaReading.MangaReadingScreen
-import com.novacodestudios.liminal.prensentation.navigation.CustomNavType
 import com.novacodestudios.liminal.prensentation.navigation.Graph
-import com.novacodestudios.liminal.prensentation.navigation.NavArguments
+import com.novacodestudios.liminal.prensentation.navigation.LiminalNavHost
 import com.novacodestudios.liminal.prensentation.navigation.Screen
-import com.novacodestudios.liminal.prensentation.navigation.UiChapter
 import com.novacodestudios.liminal.prensentation.navigation.mainGraph
-import com.novacodestudios.liminal.prensentation.navigation.toUiChapter
 import com.novacodestudios.liminal.prensentation.novelReading.NovelReadingScreen
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
-import com.novacodestudios.liminal.util.encodeUrl
-import com.novacodestudios.liminal.util.withEncodedUrl
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okio.IOException
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.reflect.typeOf
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -71,18 +58,17 @@ class MainActivity : ComponentActivity() {
 
         if (ContextCompat.checkSelfPermission(
                 this,
-                android.Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ActivityCompat.requestPermissions(
                     this,
-                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                     1
                 )
             }
         }
-
 
         enableEdgeToEdge()
         setContent {
@@ -112,56 +98,10 @@ class MainActivity : ComponentActivity() {
                         contentWindowInsets = ScaffoldDefaults.contentWindowInsets
                             .exclude(TopAppBarDefaults.windowInsets)
                     ) { paddingValues ->
-                        NavHost(
+                        LiminalNavHost(
                             modifier = Modifier.padding(paddingValues),
                             navController = navController,
-                            startDestination = Graph.Main,
-                            route = Graph.Root::class
-                        ) {
-                            mainGraph(navController)
-
-                            composable<Screen.Detail> {
-                                DetailScreen(
-                                    onNavigateUp = { navController.navigateUp() },
-                                    onNavigateMangaReadingScreen = { chapter, chapters ->
-                                        Log.d(TAG, "onNavigateMangaReadingScreen: çalıştı $chapter")
-                                        NavArguments.currentChapter = chapter
-                                        NavArguments.chapterList = chapters
-
-                                        navController.navigate(
-                                            Screen.MangaReading
-                                        )
-                                    },
-                                    onNavigateNovelReadingScreen = { chapter, detailUrl ->
-                                        NavArguments.currentChapter = chapter
-                                        navController.navigate(
-                                            Screen.NovelReading
-                                        )
-                                    },
-                                )
-                            }
-
-                            composable<Screen.MangaReading>(
-                                typeMap = mapOf(
-                                    typeOf<UiChapter>() to CustomNavType.UiChapterType,
-                                )
-                            ) {
-                                MangaReadingScreen(onNavigateUp = {
-                                    navController.navigateUp()
-                                })
-                            }
-                            composable<Screen.NovelReading>(
-                                typeMap = mapOf(
-                                    typeOf<UiChapter>() to CustomNavType.UiChapterType
-                                )
-                            ) {
-                                NovelReadingScreen(onNavigateUp = {
-                                    navController.navigateUp()
-                                })
-                            }
-                        }
-
-
+                        )
                     }
                 }
             }

@@ -1,55 +1,91 @@
 package com.novacodestudios.liminal.data.repository
 
+import android.database.sqlite.SQLiteException
 import com.novacodestudios.liminal.data.locale.SeriesDao
-import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
-import com.novacodestudios.liminal.util.Resource
-import com.novacodestudios.liminal.util.executeWithResource
-import com.novacodestudios.liminal.util.executeWithResourceFlow
+import com.novacodestudios.liminal.data.mapper.toChapter
+import com.novacodestudios.liminal.data.mapper.toModel
+import com.novacodestudios.liminal.data.mapper.toSeriesDetail
+import com.novacodestudios.liminal.data.mapper.toSeriesEntity
+import com.novacodestudios.liminal.data.remote.SeriesScraper
+import com.novacodestudios.liminal.domain.model.Chapter
+import com.novacodestudios.liminal.domain.model.Content
+import com.novacodestudios.liminal.domain.model.DataError
+import com.novacodestudios.liminal.domain.model.Series
+import com.novacodestudios.liminal.domain.model.SeriesSummary
+import com.novacodestudios.liminal.domain.model.Source
+import com.novacodestudios.liminal.domain.util.EmptyResult
+import com.novacodestudios.liminal.domain.util.Result
+import com.novacodestudios.liminal.domain.util.map
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class SeriesRepository @Inject constructor(
-    private val dao: SeriesDao
+    private val scrapers: List<SeriesScraper>,
+    private val dao: SeriesDao,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    fun getSeriesById(id: String): Flow<Resource<SeriesEntity>> = executeWithResourceFlow {
-        dao.getSeriesById(id)
-    }
-    fun getSeriesByIdNew(id: String): SeriesEntity = dao.getSeriesByIdNew(id)
-
-
-
-
-    fun getAllSeries(): Flow<Resource<List<SeriesEntity>>> = executeWithResourceFlow {
-        dao.getAllSeries()
+    private fun getScraperForUrl(url: String): SeriesScraper {
+        return scrapers.find { url.contains(it.source.url) }
+            ?: throw IllegalArgumentException("Invalid source") // TODO: exceptionu kaydet
     }
 
-    suspend fun upsert(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource {
-        dao.upsert(series)
+    suspend fun getSeriesList(
+        source: Source,
+        page: Int = 1
+    ): Result<List<SeriesSummary>, DataError.Network> = withContext(dispatcher) {
+        val scraper = getScraperForUrl(source.url)
+        scraper.getSeriesList(page).map { it.map { x -> x.toModel() } }
     }
 
-    suspend fun insertSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource() {
-        dao.insert(series)
+    suspend fun getSeriesDetail(url: String): Result<Series, DataError.Network> =
+        withContext(dispatcher) {
+            val scraper = getScraperForUrl(url)
+            scraper.getSeriesDetail(url).map { it.toSeriesDetail() }
+        }
+
+    suspend fun getSeriesChapterList(url: String): Result<List<Chapter>, DataError.Network> =
+        withContext(dispatcher) {
+            val scraper = getScraperForUrl(url)
+            scraper.getSeriesChapterList(url)
+                .map { it.map { chapterDto -> chapterDto.toChapter() } }
+        }
+
+    suspend fun getChapterContent(chapterUrl: String): Result<List<Content>, DataError.Network> =
+        withContext(dispatcher) {
+            val scraper = getScraperForUrl(chapterUrl)
+            scraper.getChapterContent(chapterUrl)
+        }
+
+
+    suspend fun getSeriesById(id: String): Series {
+        return dao.getSeriesById(id)?.toSeriesDetail()
+            ?: throw IllegalArgumentException("Seri bulunamadı: $id")
     }
 
-    suspend fun deleteSeries(series: SeriesEntity): Flow<Resource<Unit>> = executeWithResource {
-        dao.deleteSeries(series)
+    fun getAllSeries(): Flow<List<Series>> {
+        return dao.getAllSeries().map { it.map { entity -> entity.toSeriesDetail() } }
     }
 
-   /* fun getSeriesByChapterId(chapterId: String): Flow<Resource<SeriesEntity>> =
-        executeWithResourceFlow {
-            dao.getSeriesEntityByChapterId(chapterId)
-        }*/
-
-    suspend fun getSeriesByChapterId(chapterId: String): SeriesEntity = withContext(Dispatchers.IO){
-         dao.getSeriesEntityByChapterId(chapterId)
+    suspend fun upsert(series: Series, currentChapter: Chapter): EmptyResult<DataError.Local> {
+        return try {
+            dao.upsert(series.toSeriesEntity(currentChapter))
+            Result.Success(Unit)
+        } catch (e: SQLiteException) {
+            Result.Error(DataError.Local.DISK_FULL)
+        }
     }
 
-
-    companion object {
-        private const val TAG = "SeriesRepository"
+    suspend fun deleteSeriesById(id: String) {
+        dao.deleteSeriesById(id)
     }
 
+    suspend fun getSeriesByChapterId(chapterId: String): Series {
+        return dao.getSeriesEntityByChapterId(chapterId)?.toSeriesDetail()
+            ?: throw IllegalArgumentException("Seri bulunamadı: $chapterId")
+    }
 
 }

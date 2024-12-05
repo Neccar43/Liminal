@@ -18,7 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
@@ -37,19 +36,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.novacodestudios.liminal.data.remote.dto.Tag
-import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.domain.model.MangaDetail
+import com.novacodestudios.liminal.domain.model.Series
 import com.novacodestudios.liminal.domain.model.SeriesType
 import com.novacodestudios.liminal.domain.model.Source
+import com.novacodestudios.liminal.domain.model.Tag
 import com.novacodestudios.liminal.prensentation.component.LiminalProgressIndicator
 import com.novacodestudios.liminal.prensentation.detail.component.ChapterItem
 import com.novacodestudios.liminal.prensentation.detail.component.DetailTopBar
+import com.novacodestudios.liminal.prensentation.detail.component.ErrorMessageBox
 import com.novacodestudios.liminal.prensentation.detail.component.TagChip
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
@@ -61,16 +61,35 @@ import kotlinx.coroutines.flow.collectLatest
 fun DetailScreen(
     viewModel: DetailViewModel = hiltViewModel(),
     onNavigateUp: () -> Unit,
-    onNavigateMangaReadingScreen: (Chapter, List<Chapter>) -> Unit,
-    onNavigateNovelReadingScreen: (Chapter, String) -> Unit
+    onNavigateMangaReadingScreen: (chapterId: String) -> Unit,
+    onNavigateNovelReadingScreen: (chapterId: String) -> Unit
 ) {
     val snackbarHostState =
         remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
-                is DetailViewModel.UIState.ShowSnackBar -> snackbarHostState.showSnackbar(event.message)
+                is DetailViewModel.UIEvent.Error -> snackbarHostState.showSnackbar(
+                    event.error.asString(
+                        context
+                    )
+                )
+
+                is DetailViewModel.UIEvent.NavigateReading -> {
+                    viewModel.state.series?.type?.let { seriesType ->
+                        when (seriesType) {
+                            SeriesType.MANGA -> {
+                                onNavigateMangaReadingScreen(event.chapterId)
+                            }
+
+                            SeriesType.NOVEL -> {
+                                onNavigateNovelReadingScreen(event.chapterId)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -79,8 +98,6 @@ fun DetailScreen(
         state = viewModel.state,
         snackbarHostState = snackbarHostState,
         onNavigateUp = onNavigateUp,
-        onNavigateMangaReadingScreen = onNavigateMangaReadingScreen,
-        onNavigateNovelReadingScreen = onNavigateNovelReadingScreen,
         onEvent = viewModel::onEvent,
     )
 }
@@ -95,8 +112,6 @@ fun DetailContent(
     snackbarHostState: SnackbarHostState,
     onEvent: (DetailEvent) -> Unit,
     onNavigateUp: () -> Unit,
-    onNavigateMangaReadingScreen: (Chapter, List<Chapter>) -> Unit,
-    onNavigateNovelReadingScreen: (Chapter, String) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     Scaffold(
@@ -121,8 +136,8 @@ fun DetailContent(
                     .height(400.dp)
             ) {
                 GlideImage(
-                    model = state.detail?.imageUrl,
-                    contentDescription = state.detail?.name,
+                    model = state.series?.imageUrl,
+                    contentDescription = state.series?.name,
                     modifier = Modifier
                         .fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -146,19 +161,19 @@ fun DetailContent(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = state.detail?.name ?: "",
+                        text = state.series?.name ?: "",
                         style = MaterialTheme.typography.headlineMedium,
                         // color = Color.White
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = state.detail?.author ?: "",
+                        text = state.series?.author ?: "",
                         style = MaterialTheme.typography.titleMedium,
                         // color = Color.White
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = state.detail?.status ?: "",
+                        text = state.series?.status ?: "",
                         style = MaterialTheme.typography.bodyLarge,
                         // color = Color.White
                     )
@@ -167,12 +182,12 @@ fun DetailContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = state.detail?.summary ?: "",
+                text = state.series?.summary ?: "",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            if (state.detail?.tags?.isNotEmpty() == true) {
+            if (state.series?.tags?.isNotEmpty() == true) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
@@ -186,7 +201,7 @@ fun DetailContent(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    state.detail.tags.forEach { tag ->
+                    state.series.tags.forEach { tag ->
                         TagChip(
                             modifier = Modifier,
                             tag = tag,
@@ -205,29 +220,18 @@ fun DetailContent(
             Button(modifier = Modifier
                 .fillMaxWidth()
                 .padding(8.dp), onClick = {
-                if (state.chapterListError != null) {
+                if (state.chapterListError) {
                     onEvent(DetailEvent.OnChapterListLoadRetry)
                     return@Button
                 }
 
                 onEvent(DetailEvent.OnSeriesChapterClick(firstChapter!!))
-                when (state.detail!!.type) {
-                    SeriesType.MANGA -> onNavigateMangaReadingScreen(
-                        firstChapter,
-                        state.chapterList
-                    )
-
-                    SeriesType.NOVEL -> onNavigateNovelReadingScreen(
-                        firstChapter,
-                        state.detailPageUrl
-                    )
-                }
             }) {
-                if (state.isChapterListLoading) {
+                if (state.isChaptersLoading) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                     return@Button
                 }
-                if (state.chapterListError != null) {
+                if (state.chapterListError) {
                     Text(text = "Yeniden Deneyin")
                     return@Button
                 }
@@ -235,14 +239,14 @@ fun DetailContent(
             }
             //Spacer(modifier = Modifier.height(16.dp))
 
-
-            if (state.isChapterListLoading) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
+            if (state.chapterListError) {
+                ErrorMessageBox(
+                    errorMessage = "Bölümler yüklenirken bir hata oluştu."
                 )
-            } else {
+
+            }
+
+            if (!state.isChaptersLoading && !state.chapterListError) {
                 Text(
                     text = "Bölümler",
                     style = MaterialTheme.typography.headlineSmall,
@@ -258,17 +262,6 @@ fun DetailContent(
                     ChapterItem(
                         chapter = chapter, onChapterClick = {
                             onEvent(DetailEvent.OnSeriesChapterClick(chapter))
-                            when (state.detail!!.type) {
-                                SeriesType.MANGA -> onNavigateMangaReadingScreen(
-                                    chapter,
-                                    state.chapterList
-                                )
-
-                                SeriesType.NOVEL -> onNavigateNovelReadingScreen(
-                                    chapter,
-                                    state.detailPageUrl
-                                )
-                            }
                         },
                         onDownload = {}, // TODO: Chapter bazlı indirme işlemini ekle
                         onDelete = {}
@@ -294,7 +287,8 @@ private fun DetailPreview() {
         DetailContent(
             state = DetailState(
                 isLoading = false,
-                detail = MangaDetail(
+                chapterListError = true,
+                series = Series(
                     name = "Manga Name",
                     imageUrl = "https://sadscans.com/assets/series/60953d39538a8/laaa.jpg",
                     author = "Author",
@@ -307,60 +301,18 @@ private fun DetailPreview() {
                         Tag("Aksiyon", ""),
                         Tag("Drama", ""),
                     ),
-                    status = "Güncel"
+                    status = "Güncel",
+                    id = "",
+                    detailPageUrl = "",
+                    currentPageIndex = 0,
+                    currentChapterName = "",
+                    lastReadingDateTime = 0,
+                    currentChapterId = "",
                 ),
-                chapterList = listOf(
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                    Chapter(
-                        title = "Chapter 1",
-                        releaseDate = "2021-01-01",
-                        url = ""
-                    ),
-                ),
-                type = SeriesType.MANGA,
+                chapterList = emptyList(),
                 detailPageUrl = ""
             ),
             onNavigateUp = { },
-            onNavigateMangaReadingScreen = { _, _ ->
-
-            },
-            onNavigateNovelReadingScreen = { _, _ ->
-
-            },
             onEvent = {},
             snackbarHostState = SnackbarHostState()
         )

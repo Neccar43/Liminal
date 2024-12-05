@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar(scrollBehavior: TopAppBarScrollBehavior, onSearchClick:()->Unit) {
+fun HomeTopBar(scrollBehavior: TopAppBarScrollBehavior, onSearchClick: () -> Unit) {
     CenterAlignedTopAppBar(
         title = { Text(text = "Liminal") },
         scrollBehavior = scrollBehavior,

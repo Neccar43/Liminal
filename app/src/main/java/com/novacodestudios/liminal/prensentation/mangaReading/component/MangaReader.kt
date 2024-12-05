@@ -1,6 +1,11 @@
 package com.novacodestudios.liminal.prensentation.mangaReading.component
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,7 +19,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -61,8 +71,11 @@ fun MangaReader(
     }
 
     LaunchedEffect(urls) {
-        Log.d(TAG, "MangaReader: -----------------------------------------------------------------------------")
-        newUrls= listOf("")+urls+listOf("")
+        Log.d(
+            TAG,
+            "MangaReader: -----------------------------------------------------------------------------"
+        )
+        newUrls = listOf("") + urls + listOf("")
         Log.d(TAG, "MangaReader: newUrl ayarlandı")
     }
 
@@ -107,14 +120,27 @@ fun MangaReader(
                     .zoomable(zoomState)
             )
         }
-        if (isBarVisible) {
+
+        Text(
+            text = "${pagerState.currentPage}/${urls.size}",
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+
+        AnimatedVisibility(
+            visible = isBarVisible,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
             PageIndicator(
                 pagerState = pagerState,
                 pageCount = urls.size,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(16.dp),
+                onSkipNext = onLoadNextChapter,
+                onSkipPrevious = { onLoadPreviousChapter() }
             )
         }
 
@@ -145,7 +171,9 @@ fun MangaReader(
 fun PageIndicator(
     pagerState: PagerState,
     pageCount: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSkipNext: () -> Unit,
+    onSkipPrevious: () -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     Card(
@@ -158,6 +186,15 @@ fun PageIndicator(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
+            IconButton(
+                onClick = onSkipNext
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SkipPrevious,
+                    contentDescription = null
+                )
+            }
+
             Text(text = pageCount.toString())
             Spacer(modifier = Modifier.width(8.dp))
             Slider(
@@ -178,6 +215,15 @@ fun PageIndicator(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = pagerState.currentPage.toString())
+
+            IconButton(
+                onClick = onSkipPrevious
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SkipNext,
+                    contentDescription = null
+                )
+            }
         }
     }
 }

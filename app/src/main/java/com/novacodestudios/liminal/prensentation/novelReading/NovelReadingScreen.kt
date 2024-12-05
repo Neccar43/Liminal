@@ -13,10 +13,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +33,7 @@ import com.novacodestudios.liminal.prensentation.component.LiminalProgressIndica
 import com.novacodestudios.liminal.prensentation.component.RetryStateMessage
 import com.novacodestudios.liminal.prensentation.novelReading.component.NovelTopBar
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun NovelReadingScreen(
@@ -35,9 +41,25 @@ fun NovelReadingScreen(
     onNavigateUp: () -> Unit,
 
     ) {
+
+    val snackbarHostState =
+        remember { SnackbarHostState() }
+
+    val context = LocalContext.current
+    LaunchedEffect(key1 = true) {
+        viewModel.eventFlow.collectLatest { event ->
+            when (event) {
+                is NovelReadingViewModel.UIEvent.ShowSnackbar ->
+                    snackbarHostState.showSnackbar(event.message.asString(context))
+            }
+        }
+    }
+
+
     NovelReadingContent(
         state = viewModel.state,
         onNavigateUp = onNavigateUp,
+        snackBarHostState = snackbarHostState,
         onEvent = viewModel::onEvent
     )
 }
@@ -47,11 +69,13 @@ fun NovelReadingScreen(
 fun NovelReadingContent(
     state: NovelReadingState,
     onEvent: (NovelEvent) -> Unit,
+    snackBarHostState: SnackbarHostState,
     onNavigateUp: () -> Unit,
 ) {
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
         topBar = {
-            val series = state.seriesEntity
+            val series = state.series
             if (series != null) {
                 NovelTopBar(
                     onNavigateUp = onNavigateUp,
@@ -109,7 +133,7 @@ fun NovelReadingContent(
             RetryStateMessage(modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-                errorMessage = state.error,
+                errorMessage = state.error.asString(),
                 onClick = { onEvent(NovelEvent.OnContentRetry) })
             return@Scaffold
         }
@@ -124,15 +148,18 @@ private fun Preview() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            NovelReadingContent(state = NovelReadingState(
-                currentChapter = Chapter("", "", ""),
-                error = "İçerik yüklemedi. Lütfen tekrar deneyin.",
-                isLoading = false,
-            ),
+            NovelReadingContent(
+                state = NovelReadingState(
+                    currentChapter = Chapter("", "", "", ""),
+                    error = null,
+                    isLoading = false,
+                ),
                 onEvent = {},
                 onNavigateUp = {
 
-                })
+                },
+                snackBarHostState = SnackbarHostState()
+            )
         }
     }
 }

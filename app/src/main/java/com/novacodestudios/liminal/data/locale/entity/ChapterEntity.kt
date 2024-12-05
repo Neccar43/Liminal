@@ -20,5 +20,5 @@ data class ChapterEntity(
     val pageIndex: Int,
     val seriesId: String,
     val releaseDate: String,
-    val downloadChapterPath:String?=null// chapter yolu olacak Manga/Jujutsu kaisen/271- Nihayet
+    val downloadChapterPath: String? = null
 )

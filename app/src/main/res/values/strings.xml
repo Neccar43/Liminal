@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Liminal</string>
+
+    <!-- Network Errors -->
+    <string name="error_request_timeout">İstek zaman aşımına uğradı. Lütfen tekrar deneyin.</string>
+    <string name="error_unauthorized">Yetkilendirme hatası. Giriş yapmanız gerekiyor.</string>
+    <string name="error_conflict">Bir çakışma oluştu. Lütfen işleminizi kontrol edin.</string>
+    <string name="error_too_many_requests">Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="error_no_internet">İnternet bağlantısı bulunamadı. Lütfen bağlantınızı kontrol edin.</string>
+    <string name="error_payload_too_large">Gönderilen veri çok büyük. Lütfen daha küçük bir veri gönderin.</string>
+    <string name="error_server_error">Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.</string>
+    <string name="error_serialization">Veri işlenirken bir hata oluştu. Lütfen tekrar deneyin.</string>
+    <string name="error_unknown">Bilinmeyen bir hata oluştu. Lütfen tekrar deneyin.</string>
+
+    <!-- Local Errors -->
+    <string name="error_disk_full">Disk dolu. Lütfen yer açın ve tekrar deneyin.</string>
 </resources>

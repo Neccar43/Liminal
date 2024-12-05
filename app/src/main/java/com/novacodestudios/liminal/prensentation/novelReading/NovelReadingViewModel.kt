@@ -1,89 +1,54 @@
 package com.novacodestudios.liminal.prensentation.novelReading
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
+import androidx.navigation.toRoute
 import com.novacodestudios.liminal.data.repository.ChapterRepository
-import com.novacodestudios.liminal.data.repository.NovelRepository
 import com.novacodestudios.liminal.data.repository.SeriesRepository
-import com.novacodestudios.liminal.domain.mapper.toChapter
 import com.novacodestudios.liminal.domain.model.Chapter
-import com.novacodestudios.liminal.prensentation.mangaReading.MangaReaderViewModel
-import com.novacodestudios.liminal.prensentation.navigation.NavArguments
-import com.novacodestudios.liminal.util.Resource
-import com.novacodestudios.liminal.util.getNextChapter
-import com.novacodestudios.liminal.util.getPreviousChapter
-import com.novacodestudios.liminal.util.hashToMD5
+import com.novacodestudios.liminal.domain.model.Content
+import com.novacodestudios.liminal.domain.model.Series
+import com.novacodestudios.liminal.domain.util.onError
+import com.novacodestudios.liminal.domain.util.onSuccess
+import com.novacodestudios.liminal.prensentation.navigation.Screen
+import com.novacodestudios.liminal.prensentation.util.UiText
+import com.novacodestudios.liminal.prensentation.util.getNextChapter
+import com.novacodestudios.liminal.prensentation.util.getPreviousChapter
+import com.novacodestudios.liminal.prensentation.util.toUiText
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class NovelReadingViewModel @Inject constructor(
-    private val repository: NovelRepository,
     private val chapterRepository: ChapterRepository,
     private val seriesRepository: SeriesRepository,
+    savedStateHandle: SavedStateHandle,
 ) :
     ViewModel() {
-    var state by mutableStateOf(
-        NovelReadingState()
-    )
+    var state by mutableStateOf(NovelReadingState())
         private set
+
+    private val _eventFlow = MutableSharedFlow<UIEvent>()
+    val eventFlow = _eventFlow.asSharedFlow()
 
     init {
         viewModelScope.launch {
-            NavArguments.currentChapter?.let { chapter ->
-                val seriesEntity = getSeriesEntity(chapter = chapter)
-                state = state.copy(seriesEntity = seriesEntity)
-
-                if (state.seriesEntity != null) {
-                    getChapterList()
-
-                    Log.d(TAG, "init: chapter: $chapter ")
-                    state = state.copy(currentChapter = chapter)
-
-                    getChapterContent(state.currentChapter.url)
-                }
-            }
-        }
-    }
-
-
-    private suspend fun getSeriesEntity(chapter: Chapter): SeriesEntity {
-        val chapterId = chapter.url.hashToMD5()
-        val seriesEntity = seriesRepository.getSeriesByChapterId(chapterId)
-        state = state.copy(seriesEntity = seriesEntity)
-        return seriesEntity
-
-    }
-
-    private fun getChapterList() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val id = state.seriesEntity?.id ?: return@launch
-            chapterRepository.getChapters(id).collectLatest { resource ->
-                when (resource) {
-                    is Resource.Error -> {
-                        Log.e(TAG, "getChapterList: hata: ${resource.exception}")
-                    }
-
-                    Resource.Loading -> {
-                        Log.d(TAG, "getChapterList: loading")
-                    }
-
-                    is Resource.Success -> {
-                        Log.d(TAG, "getChapterList: chapters : ${resource.data.size}")
-                        state =
-                            state.copy(chapters = resource.data.map { it.toChapter() }.reversed())
-                    }
-                }
-
+            val chapterId = savedStateHandle.toRoute<Screen.NovelReading>().chapterId
+            val series = seriesRepository.getSeriesByChapterId(chapterId)
+            state = state.copy(series = series)
+            if (state.series != null) {
+                val chapters = chapterRepository.getChaptersBySeriesId(state.series!!.id).first()
+                val chapter = chapters.find { it.id == chapterId } ?: return@launch
+                state = state.copy(currentChapter = chapter, chapters = chapters)
+                getChapterContent(state.currentChapter.url)
             }
         }
     }
@@ -97,67 +62,35 @@ class NovelReadingViewModel @Inject constructor(
     }
 
     private fun getChapterContent(chapterUrl: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.getNovelChapterContent(chapterUrl).collectLatest { resource ->
-                withContext(Dispatchers.Main) {
-                    when (resource) {
-                        is Resource.Error -> {
-                            state = state.copy(
-                                isLoading = false,
-                                error = resource.exception.localizedMessage
-                                    ?: "Bir hata oluştu lütfen tekrar deneyin"
-                            )
-                        }
+        state = state.copy(isLoading = true)
+        viewModelScope.launch {
+            seriesRepository.getChapterContent(chapterUrl)
+                .onSuccess {
+                    val contentList =
+                        it.filterIsInstance<Content.Text>().map { text -> text.content }
+                    state = state.copy(isLoading = false, chapterContent = contentList)
 
-                        Resource.Loading -> state = state.copy(isLoading = true, error = null)
-                        is Resource.Success -> state =
-                            state.copy(
-                                isLoading = false,
-                                error = null,
-                                chapterContent = resource.data
-                            )
-                    }
+                }.onError {
+                    state = state.copy(isLoading = false, error = it.toUiText())
+                    _eventFlow.emit(UIEvent.ShowSnackbar(it.toUiText()))
                 }
-
-
-            }
         }
     }
 
     private fun getNextChapter() {
-        setChapterIsReadTrue(state.currentChapter)
-        val nextChapter = state.chapters.getNextChapter(state.currentChapter) ?: return
-        updateSeriesCurrentChapterAndIndex(nextChapter)
-        state = state.copy(currentChapter = nextChapter)
-        getChapterContent(state.currentChapter.url)
-
+        viewModelScope.launch {
+            chapterRepository.setIsReadByChapterId(state.currentChapter.id, isRead = true)
+            val nextChapter = state.chapters.getNextChapter(state.currentChapter) ?: return@launch
+            updateSeriesCurrentChapterAndIndex(nextChapter)
+            state = state.copy(currentChapter = nextChapter)
+            getChapterContent(state.currentChapter.url)
+        }
     }
 
     private fun updateSeriesCurrentChapterAndIndex(chapter: Chapter) {
-        viewModelScope.launch() {
-            val chapterId = chapter.url.hashToMD5()
-            val seriesEntity = state.seriesEntity?.copy(
-                lastReadingDateTime = System.currentTimeMillis(),
-                currentChapterId = chapterId,
-                currentChapterName = chapter.title,
-                currentPageIndex = 0
-            )
-            seriesRepository.upsert(seriesEntity!!).collectLatest { resource ->
-                when (resource) {
-                    is Resource.Error -> {
-                        Log.e(
-                            TAG,
-                            "updateSeriesCurrentChapterAndIndex: Hata: ${resource.exception}"
-                        )
-                    }
-
-                    Resource.Loading -> {}
-                    is Resource.Success -> {
-                        Log.d(TAG, "updateSeriesCurrentChapterAndIndex: Index değiştirldi")
-                    }
-                }
-
-            }
+        viewModelScope.launch {
+            val seriesEntity = state.series?.copy(currentPageIndex = 0)
+            seriesRepository.upsert(seriesEntity!!, currentChapter = chapter)
         }
     }
 
@@ -168,11 +101,9 @@ class NovelReadingViewModel @Inject constructor(
         getChapterContent(state.currentChapter.url)
     }
 
-    private fun setChapterIsReadTrue(chapter: Chapter) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val id = chapter.url.hashToMD5()
-            chapterRepository.setIsReadByChapterId(id, isRead = true)
-        }
+
+    sealed class UIEvent {
+        data class ShowSnackbar(val message: UiText) : UIEvent()
     }
 
     companion object {
@@ -183,11 +114,11 @@ class NovelReadingViewModel @Inject constructor(
 
 data class NovelReadingState(
     val chapters: List<Chapter> = emptyList(),
-    val currentChapter: Chapter = Chapter("", "", "", null),
+    val currentChapter: Chapter = Chapter("", "", "", ""),
     val chapterContent: List<String> = emptyList(),
     val isLoading: Boolean = false,
-    val seriesEntity: SeriesEntity? = null,
-    val error: String? = null
+    val series: Series? = null,
+    val error: UiText? = null
 )
 
 sealed class NovelEvent {

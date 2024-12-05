@@ -20,7 +20,7 @@ import com.novacodestudios.liminal.prensentation.navigation.Screen
 
 @Composable
 fun BottomBar(navController: NavHostController) {
-    val navItems=listOf(
+    val navItems = listOf(
         BottomNavigationItem(
             title = "Ana Sayfa",
             selectedIcon = Icons.Filled.Home,
@@ -38,7 +38,7 @@ fun BottomBar(navController: NavHostController) {
     val currentDestination = navBackStackEntry?.destination
     NavigationBar {
         navItems.forEach { item ->
-            val isSelected=currentDestination?.hasRoute(item.route::class)==true
+            val isSelected = currentDestination?.hasRoute(item.route::class) == true
 
             NavigationBarItem(
                 label = { Text(text = item.title) },

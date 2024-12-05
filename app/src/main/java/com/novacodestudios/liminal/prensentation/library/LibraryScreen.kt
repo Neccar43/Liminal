@@ -20,42 +20,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
-import com.novacodestudios.liminal.domain.model.Chapter
+import com.novacodestudios.liminal.domain.model.SeriesType
 import com.novacodestudios.liminal.prensentation.component.EmptyStateMessage
 import com.novacodestudios.liminal.prensentation.library.component.SeriesItem
 import com.novacodestudios.liminal.prensentation.theme.LiminalTheme
 import kotlinx.coroutines.flow.collectLatest
 
-// TODO: kullanıcının en son okuduğu mangaya göre liste sıralamasını yap
 @Composable
 fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel(),
-    onNavigateMangaReadingScreen: (Chapter, List<Chapter>) -> Unit,
-    onNavigateNovelReadingScreen: (Chapter, String) -> Unit
+    onNavigateMangaReadingScreen: (chapterId: String) -> Unit,
+    onNavigateNovelReadingScreen: (chapterId: String) -> Unit
 ) {
     val snackbarHostState =
         remember { SnackbarHostState() }
 
+    val context = LocalContext.current
+
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
-                is LibraryViewModel.UIState.ShowSnackBar -> snackbarHostState.showSnackbar(event.message)
-                is LibraryViewModel.UIState.NavigateReadingScreen -> {
-                    if (event.seriesEntity.isManga) {
-                        onNavigateMangaReadingScreen(
-                            viewModel.state.selectedChapter!!,
-                            viewModel.state.selectedChapterList
-                        )
-                        return@collectLatest
+                is LibraryViewModel.UIState.ShowSnackBar ->
+                    snackbarHostState.showSnackbar(event.message.asString(context))
+
+                is LibraryViewModel.UIState.NavigateReading -> {
+                    when (event.seriesType) {
+                        SeriesType.MANGA -> {
+                            onNavigateMangaReadingScreen(event.seriesId)
+                        }
+
+                        SeriesType.NOVEL -> {
+                            onNavigateNovelReadingScreen(event.seriesId)
+                        }
                     }
-                    onNavigateNovelReadingScreen(
-                        viewModel.state.selectedChapter!!,
-                        event.seriesEntity.detailPageUrl
-                    )
                 }
             }
         }
@@ -85,24 +86,25 @@ fun LibraryScreenContent(
                 .fillMaxSize()
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.seriesEntityList) { seriesEntity ->
+                items(state.seriesList) { series ->
                     SeriesItem(
                         modifier = Modifier.fillMaxWidth(),
-                        series = seriesEntity,
+                        series = series,
                         onReset = {
                             Log.d(TAG, "onReset çalıştı")
-                            onEvent(LibraryEvent.OnResetSeries(it)) },
-                        onDownload = {onEvent(LibraryEvent.OnDownloadSeries(it))},
+                            onEvent(LibraryEvent.OnResetSeries(it))
+                        },
+                        onDownload = { onEvent(LibraryEvent.OnDownloadSeries(it)) },
                         onClick = {
                             Log.d(TAG, "onClick çalıştı")
-                            onEvent(LibraryEvent.OnSeriesItemClicked(seriesEntity))
+                            onEvent(LibraryEvent.OnSeriesItemClicked(series))
                         }
                     )
                 }
             }
         }
 
-        if (state.seriesEntityList.isEmpty()) {
+        if (state.seriesList.isEmpty()) {
             EmptyStateMessage(
                 modifier = Modifier
                     .fillMaxSize()
@@ -137,49 +139,7 @@ private fun emtymessage() {
 private fun Item() {
     LiminalTheme {
         LibraryScreenContent(state = LibraryState(
-            seriesEntityList = listOf(
-                SeriesEntity(
-                    id = "",
-                    name = "Jujutsu Kaisen",
-                    lastReadingDateTime = System.currentTimeMillis(),
-                    detailPageUrl = "",
-                    imageUrl = "",
-                    currentChapterId = "",
-                    currentPageIndex = 0,
-                    isManga = true,
-                ),
-                SeriesEntity(
-                    id = "",
-                    name = "Jujutsu Kaisen",
-                    lastReadingDateTime = System.currentTimeMillis(),
-                    detailPageUrl = "",
-                    imageUrl = "",
-                    currentChapterId = "",
-                    currentPageIndex = 0,
-                    isManga = true,
-                ),
-                SeriesEntity(
-                    id = "",
-                    name = "Jujutsu Kaisen",
-                    lastReadingDateTime = System.currentTimeMillis(),
-                    detailPageUrl = "",
-                    imageUrl = "",
-                    currentChapterId = "",
-                    currentPageIndex = 0,
-                    isManga = true,
-                ),
-                SeriesEntity(
-                    id = "",
-                    name = "Jujutsu Kaisen",
-                    lastReadingDateTime = System.currentTimeMillis(),
-                    detailPageUrl = "",
-                    imageUrl = "",
-                    currentChapterId = "",
-                    currentPageIndex = 0,
-                    isManga = true,
-                ),
-
-                )
+            seriesList = listOf()
         ), snackbarHostState = remember { SnackbarHostState() }, onEvent = {
 
         }

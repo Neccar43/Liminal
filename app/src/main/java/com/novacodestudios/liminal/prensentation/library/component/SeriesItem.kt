@@ -29,17 +29,17 @@ import androidx.compose.ui.unit.dp
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.novacodestudios.liminal.R
-import com.novacodestudios.liminal.data.locale.entity.SeriesEntity
-import com.novacodestudios.liminal.util.formatTimeAgo
+import com.novacodestudios.liminal.domain.model.Series
+import com.novacodestudios.liminal.prensentation.util.formatTimeAgo
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun SeriesItem(
     modifier: Modifier = Modifier,
-    series: SeriesEntity,
+    series: Series,
     onClick: () -> Unit,
-    onReset: (SeriesEntity) -> Unit,
-    onDownload: (SeriesEntity) -> Unit
+    onReset: (Series) -> Unit,
+    onDownload: (Series) -> Unit
 ) {
     Row(
         modifier = modifier

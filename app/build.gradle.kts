@@ -72,10 +72,10 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-    implementation("androidx.activity:activity-compose:1.9.1")
-    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -90,11 +90,12 @@ dependencies {
 
 
     // Material
-    val materialVersion = "1.6.8"
+    val materialVersion = "1.7.5"
     // implementation("androidx.compose.material3:material3-window-size-class:1.2.0")
     implementation("androidx.compose.material:material-icons-extended:$materialVersion")
     implementation("androidx.compose.animation:animation:$materialVersion")
     implementation("androidx.compose.material:material:$materialVersion")
+    implementation("androidx.compose.foundation:foundation:$materialVersion")
 
 // Compose dependencies
     val lifeCycleVersion = "2.8.4"
@@ -151,7 +152,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jsoup:jsoup:1.17.2")
 
-   // implementation("com.github.khushpanchal:Ketch:2.0.2")
+    // implementation("com.github.khushpanchal:Ketch:2.0.2")
 
     //workmanager
     implementation("androidx.hilt:hilt-work:1.2.0")
