@@ -117,9 +117,6 @@ dependencies {
     //Glide
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
 
-    //skrapeit (web scraping)
-    //implementation("it.skrape:skrapeit:1.2.2")
-
     //Coil compose
     implementation("io.coil-kt:coil-compose:2.6.0")
 

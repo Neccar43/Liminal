@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.util.Log
+import android.view.Window
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -120,22 +121,21 @@ fun MangaReadingContent(
         mutableStateOf(false)
     }
     val context=LocalContext.current
-    DisposableEffect(Unit) {
-        val window = context.findActivity()?.window ?: return@DisposableEffect onDispose {}
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+    val window = context.findActivity()?.window ?: return
+    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
 
-        insetsController.apply {
-            hide(WindowInsetsCompat.Type.statusBars())
-            hide(WindowInsetsCompat.Type.navigationBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    LaunchedEffect(isBarVisible) {
+        if (isBarVisible){
+            showSystemBars(insetsController)
+            return@LaunchedEffect
         }
+        hideSystemBars(insetsController)
+    }
 
+
+    DisposableEffect(Unit) {
         onDispose {
-            insetsController.apply {
-                show(WindowInsetsCompat.Type.statusBars())
-                show(WindowInsetsCompat.Type.navigationBars())
-                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
-            }
+            showSystemBars(insetsController)
         }
     }
     Scaffold(
@@ -331,6 +331,23 @@ fun ChapterListItem(chapter: Chapter, onItemClick: (Chapter) -> Unit, isSelected
         )
     }
 }
+
+private fun showSystemBars(insetsController: WindowInsetsControllerCompat) {
+    insetsController.apply {
+        show(WindowInsetsCompat.Type.statusBars())
+        show(WindowInsetsCompat.Type.navigationBars())
+        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+}
+
+private fun hideSystemBars(insetsController: WindowInsetsControllerCompat) {
+    insetsController.apply {
+        hide(WindowInsetsCompat.Type.statusBars())
+        hide(WindowInsetsCompat.Type.navigationBars())
+        systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
+}
+
 
 
 private const val TAG = "MangaReadingScreen"
